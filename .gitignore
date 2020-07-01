@@ -1,0 +1,8 @@
+# Nextflow-related
+.nextflow/
+.nextflow.log*
+work/
+
+#Vim-related
+*.un~
+*.swp*
