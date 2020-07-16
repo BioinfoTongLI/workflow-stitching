@@ -2,7 +2,11 @@
 .nextflow/
 .nextflow.log*
 work/
+tmp/
+logs/
+__pycache__*
 
 #Vim-related
 *.un~
 *.swp*
+*.xlsx
