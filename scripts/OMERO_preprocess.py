@@ -34,16 +34,16 @@ def extract_info_from_path(root, project_code):
     not_renamed = []
     for r, ds, fs in os.walk(root):
         for f in fs:
-            if f.endswith("T0.ome.tif") and f.startswith(project_code):
+            if f.endswith(".ome.tif") and f.startswith(project_code):
                 renamed.append((r, f))
-            elif f.endswith("T0.ome.tiff") and "tmpcache" in ds:
+            elif f.endswith(".ome.tiff") and "tmpcache" in ds:
                 failed.append((r, f))
             elif f.endswith(".ome.tiff"):
                 not_renamed.append((r, f))
     return renamed, failed, not_renamed
 
 
-def append_PE_info_to_log(file_list, PE_log):
+def find_matches_in_PE_and_log(file_list, PE_log):
     matched_log = []
     no_matched_log = []
     for r, f in file_list:
@@ -77,10 +77,8 @@ def append_PE_info_to_log(file_list, PE_log):
                     current_line = the_line.iloc[0].append(info_from_path, ignore_index=False)
                 else:
                     no_matched_log.append((r, f))
-                    print("This measurement can not find one-to-one candidate: \n %s" %r)
             else:
                 no_matched_log.append((r, f))
-                print("This measurement can not find one-to-one candidate: \n %s" %r)
         else:
             info_from_path["SlideID_PE"] = slide_or_plateId
             the_line = PE_log[(PE_log.SlideID == slide_or_plateId) &
@@ -90,7 +88,6 @@ def append_PE_info_to_log(file_list, PE_log):
                 current_line = the_line.iloc[0].append(info_from_path, ignore_index=False)
             else:
                 no_matched_log.append((r, f))
-                print("This measurement can not find one-to-one candidate:\n%s" %r)
 
         if current_line is not None:
             matched_log.append(current_line)
