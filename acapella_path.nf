@@ -1,9 +1,9 @@
 #!/usr/bin/env nextflow
 
-params.proj_code = 'KR_C19'
+params.proj_code = 'JSP_HSS'
 params.root = "/nfs/team283_imaging/0HarmonyExports/" + params.proj_code
 params.out_dir = "/nfs/0HarmonyStitched/" + params.proj_code
-params.log = '/nfs/team283_imaging/TL_SYN/20200819_stitching_request_v2.xlsx'
+params.log = '/nfs/team283_imaging/TL_SYN/20200820_stitching_request.xlsx'
 params.zdim_mode = 'max'
 
 meas_dirs = Channel.fromPath(params.root + "/200818*/Images/Index.idx.xml",
@@ -11,7 +11,7 @@ meas_dirs = Channel.fromPath(params.root + "/200818*/Images/Index.idx.xml",
 
 cluster = true
 rename = false
-skip_stitching = false
+do_stitching = false
 
 process stitch {
     echo true
@@ -24,7 +24,7 @@ process stitch {
 	path meas from meas_dirs
 
     when:
-	!skip_stitching
+	do_stitching
 
     shell:
     if (cluster) {
@@ -52,7 +52,6 @@ process rename {
 	path '*.tsv'
 
     """
-	echo ${params.out_dir}
 	python ${workflow.projectDir}/process_log.py -xlsx $params.log -stitched_root ${params.out_dir} -proj_code ${params.proj_code} --rename
     """
 }
