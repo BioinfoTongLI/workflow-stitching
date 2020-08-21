@@ -133,8 +133,8 @@ def generate_image_location_path(df):
     locations = []
     for p in df.new_tif_path:
         new_p = p
-        if "/nfs/t283_imaging" not in new_p:
-             new_p = new_p.replace("/nfs", "/nfs/t283_imaging")
+        if "/nfs/team283_imaging" not in new_p:
+             new_p = new_p.replace("/nfs", "/nfs/team283_imaging")
         locations.append("/".join(new_p.split("/")[:-1]))
     return locations
 
