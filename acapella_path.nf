@@ -3,15 +3,15 @@
 params.proj_code = 'OB_AST'
 params.root = "/nfs/team283_imaging/0HarmonyExports/" + params.proj_code
 params.out_dir = "/nfs/0HarmonyStitched/" + params.proj_code
-params.log = '/nfs/team283_imaging/TL_SYN/20200824_stitching_request.xlsx'
+params.log = '/nfs/team283_imaging/TL_SYN/20200821_stitching_request.xlsx'
 params.zdim_mode = 'max'
 
-meas_dirs = Channel.fromPath(params.root + "/JSP_HSS_MM10001*/Images/Index.idx.xml",
+meas_dirs = Channel.fromPath(params.root + "/JSP_HSS_MM10006*/Images/Index.idx.xml",
 	checkIfExists:true).map{file -> file.parent.parent }
 
-cluster = true
-rename = false
-do_stitching = true
+cluster = false
+rename = true
+do_stitching = false
 
 process stitch {
     echo true
@@ -41,6 +41,7 @@ process stitch {
 process rename {
     echo true
     publishDir './tsvs', mode:"copy"
+    conda 'tqdm xlrd pandas'
 
     input:
 	path params.log
@@ -52,6 +53,6 @@ process rename {
 	path '*.tsv'
 
     """
-	python ${workflow.projectDir}/process_log.py -xlsx $params.log -stitched_root ${params.out_dir} -proj_code ${params.proj_code} --rename
+	python ${workflow.projectDir}/process_log.py -xlsx "$params.log" -stitched_root ${params.out_dir} -proj_code ${params.proj_code} --rename
     """
 }
