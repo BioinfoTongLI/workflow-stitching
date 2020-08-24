@@ -1,17 +1,17 @@
 #!/usr/bin/env nextflow
 
-params.proj_code = 'JSP_HSS'
+params.proj_code = 'OB_AST'
 params.root = "/nfs/team283_imaging/0HarmonyExports/" + params.proj_code
 params.out_dir = "/nfs/0HarmonyStitched/" + params.proj_code
-params.log = '/nfs/team283_imaging/TL_SYN/20200820_stitching_request.xlsx'
+params.log = '/nfs/team283_imaging/TL_SYN/20200824_stitching_request.xlsx'
 params.zdim_mode = 'max'
 
-meas_dirs = Channel.fromPath(params.root + "/200818*/Images/Index.idx.xml",
+meas_dirs = Channel.fromPath(params.root + "/JSP_HSS_MM10001*/Images/Index.idx.xml",
 	checkIfExists:true).map{file -> file.parent.parent }
 
 cluster = true
 rename = false
-do_stitching = false
+do_stitching = true
 
 process stitch {
     echo true
@@ -33,7 +33,7 @@ process stitch {
 	"""
     } else {
 	"""
-	docker run -v "${params.root}/$meas"/Images:/data_in/Images:ro -v "${params.out_dir}/$meas":/data_out:rw --user 0:0 acapella-tong-touching:1.1.5 acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile=/data_in/Images/Index.idx.xml -s OutputDir=/data_out -s ZProjection="!{params.zdim_mode}" -s OutputFormat=tiff -s Silent=false -s Channels="ALL" /home/acapella/StitchImage.script
+	docker run -v "${params.root}/$meas"/Images:/data_in/Images:ro -v "${params.out_dir}/$meas":/data_out:rw --user 0:0 acapella-tong:1.1.5-split acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile=/data_in/Images/Index.idx.xml -s OutputDir=/data_out -s ZProjection="!{params.zdim_mode}" -s OutputFormat=tiff -s Silent=false -s Channels="ALL" /home/acapella/StitchImage.script
 	"""
     }
 }
