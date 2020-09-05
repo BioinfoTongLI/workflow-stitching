@@ -76,7 +76,7 @@ def main(args):
 
     df_for_import.to_csv(import_name, sep="\t", index=False)
     matched_and_renamed.sort_values("SlideID", inplace=True)
-    matched_and_renamed.to_csv(tsv_out_name, sep="\t")
+    matched_and_renamed.to_csv(tsv_out_name, sep="\t", index=False)
 
 
 if __name__ == "__main__":
