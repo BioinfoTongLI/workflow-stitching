@@ -110,13 +110,12 @@ def generate_columns_for_OMERO(df):
     df["SampleID_no_slash"] = [i.replace("/", ".") for i in df.SampleID]
     df = df.assign(OMERO_DATASET=generate_omero_dataset)
 
-    #
     sep_col = pd.Series(["_"]* df.shape[0])
     df["OMERO_fileName"] = \
             df.SlideID_PE + sep_col + \
             df.OMERO_DATASET + sep_col + \
             pd.Series(["Meas"]* sep_col.shape[0]) + \
-            df.Measurement_PE.iloc[:, 0] + sep_col + df.PE_filename
+            df.Measurement_PE + sep_col + df.PE_filename
 
     del df["SampleID_no_slash"]
 
@@ -126,7 +125,7 @@ def generate_columns_for_OMERO(df):
     # df.OMERO_internal_users = df.OMERO_internal_users.fillna("kr19")
 
     df = df.assign(dataDir = lambda x: \
-            ["/".join(fpath.split("/")[:-1]) + "/" for fpath in x.tif_path.iloc[:, 0]]
+            ["/".join(fpath.split("/")[:-1]) + "/" for fpath in x.tif_path]
         )
 
     df["new_tif_path"] = df.dataDir + df.OMERO_fileName
