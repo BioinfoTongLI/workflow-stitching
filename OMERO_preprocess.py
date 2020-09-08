@@ -51,8 +51,8 @@ def find_matches_in_PE_and_log(file_list, PE_log):
                                   "SlideID_PE", "PlateID_PE", "PE_filename"], dtype=str)
 #         new_r = r.replace("HarmonyExports", "0HarmonyExports")
 
-        fname = re.search(r'.*(A\d+_F\d+P\d+T\d+.ome.tif).*', f).group(1)
-        WellId = re.search(r'.*A(\d+)_F.*P.*T.*.ome.tif.*', f).group(1)
+        fname = re.search(r'.*(A\d+_F\d+.*T\d+.ome.tif).*', f).group(1)
+        WellId = re.search(r'.*A(\d+)_F.*T.*.ome.tif.*', f).group(1)
         measureId = str(re.search(r'.*Measurement (\d+.*)', r).group(1))
         slide_or_plateId = re.search(r'.*/(.*)__20.*', r).group(1)
 
