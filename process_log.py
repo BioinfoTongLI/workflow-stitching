@@ -71,34 +71,7 @@ def main(args):
 
             df_for_import.to_csv(import_name, sep="\t", index=False)
     else:
-        # All measurements that can be renamed are renamed. Merged the logs
-        matched_and_renamed, no_match_and_renamed = \
-                OMERO_preprocess.find_matches_in_PE_and_log(all_renamed, PE_log)
-        logging.warning(no_match_and_renamed)
-        matched_and_renamed = OMERO_preprocess.generate_columns_for_OMERO(matched_and_renamed)
-
-        # This is the tmp modification, maybe changed
-        matched_and_renamed.OMERO_project = matched_and_renamed.Tissue_1
-
-        logging.info(matched_and_renamed.columns)
-        tsv_out_name = "%s_merged_log_subset_%s.tsv"
-        i = 0
-        while os.path.exists(tsv_out_name %(proj_code, i)):
-            i += 1
-        tsv_out_name = tsv_out_name %(proj_code, i)
-        if os.path.exists(tsv_out_name):
-            existing_log = pd.read_csv(tsv_out_name, sep="\t")
-            matched_and_renamed = pd.concat([existing_log, matched_and_renamed])
-            # print(matched_and_renamed.columns)
-            logging.info(matched_and_renamed.shape)
-            matched_and_renamed.drop_duplicates(
-                    # ["SlideID", "Measurement", "Automated_PlateID", "Mag_Bin_Overlap"],
-                    # ["new_tif_path"]
-                    ignore_index=True, inplace=True
-            )
-        matched_and_renamed.sort_values("SlideID", inplace=True)
-        matched_and_renamed.to_csv(tsv_out_name, sep="\t")
-        print(matched_and_renamed)
+        logging.info('All images reanmed')
 
 
 if __name__ == "__main__":
