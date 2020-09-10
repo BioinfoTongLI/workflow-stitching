@@ -1,19 +1,19 @@
 #!/usr/bin/env nextflow
 
-params.proj_code = 'RV_GON'
+params.proj_code = 'JSP_HSS'
 params.root = "/nfs/team283_imaging/0HarmonyExports/" + params.proj_code
-//params.out_dir = "/nfs/0HarmonyStitched/" + params.proj_code
-params.out_dir = "$PWD"
+params.out_dir = "/nfs/0HarmonyStitched/" + params.proj_code
+//params.out_dir = "$PWD"
 params.log = '/nfs/team283_imaging/TL_SYN/log_files/2020.08.26 VK_VIS Phenix log Visium TO slide adult thymus.xlsx'
-params.zdim_mode = 'none'
+params.zdim_mode = 'max'
 
 
-meas_dirs = Channel.fromPath(params.root + "/RV_GON_00DH*2/Images/Index.idx.xml",
+meas_dirs = Channel.fromPath(params.root + "/JSP_HSS_MM1000[6-7]*b/Images/Index.idx.xml",
 	checkIfExists:true).map{file -> file.parent.parent }
 
 do_stitching = true
 gap = 15000
-rename = false
+rename = !do_stitching
 
 
 process stitch {
