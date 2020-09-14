@@ -17,6 +17,7 @@ import logging
 import shutil
 import os
 from tqdm import tqdm
+from datetime import datetime
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 
@@ -63,11 +64,7 @@ def main(args):
 
             # Do not generate the import.tsv until all tiffs are renamed
             df_for_import = OMERO_preprocess.generate_tsv_for_import(matched_and_unrenamed.copy())
-            import_name = "%s_import_%s.tsv"
-            i = 0
-            while os.path.exists(import_name %(proj_code, i)):
-                i += 1
-            import_name = import_name %(proj_code, i)
+            import_name = "%s_import_%s.tsv" %(proj_code, datetime.today().strftime('%Y%m%d%H%M'))
 
             df_for_import.to_csv(import_name, sep="\t", index=False)
     else:
