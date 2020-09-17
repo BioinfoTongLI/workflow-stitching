@@ -145,11 +145,16 @@ def generate_image_location_path(df):
     return locations
 
 
-def generate_tsv_for_import(df_for_import):
-    df_for_import = df_for_import.assign(location = generate_image_location_path)
+def generate_tsv_for_import(full_df, server_add):
+    full_df = full_df.assign(location = generate_image_location_path)
 
-    df_for_import =  df_for_import.assign(filename = lambda x: [s.split("/")[-1] for s in x.new_tif_path])
+    full_df =  full_df.assign(filename = lambda x: [s.split("/")[-1] for s in x.new_tif_path])
 
-    df_for_import = df_for_import[["location","filename", "Project", "OMERO_internal_group", "OMERO_internal_users", "OMERO_project", "OMERO_DATASET"]]
+    tar_chs = [col for col in full_df.columns if col.startswith("Target")]
+    ch_names = full_df.apply(lambda row: "_".join([str(row.loc[col]) for col in tar_chs]), axis=1)
+
+    df_for_import = full_df[["location","filename", "Project", "OMERO_internal_group", "OMERO_internal_users", "OMERO_project", "OMERO_DATASET"]]
+    df_for_import["OMERO_SERVER"] = server_add
+    df_for_import["Ch_names"] = ch_names
 
     return df_for_import

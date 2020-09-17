@@ -31,12 +31,10 @@ def main(args):
             "*Measurement ",
             str(row.Measurement),
             measurement_anchor])
-        # print(line)
         full_p = glob(line)
         assert len(full_p) == 1
         export_loc = full_p[0].replace(measurement_anchor, "")
         df.loc[ind, "full_export_location"] = export_loc
-        print(export_loc)
     df.to_csv(Path(args.xlsx).stem + ".csv", index=False)
 
 if __name__ == "__main__":
