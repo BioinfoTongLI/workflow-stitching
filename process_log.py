@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
-#
+
 # Copyright © 2020 Tong LI <tongli.bioinfo@protonmail.com>
 #
 # Distributed under terms of the BSD-3 license.
@@ -34,7 +34,7 @@ def main(args):
             "Total counts\nRenamed: %s\nStitching failed: %s\nNot renamed: %s"
             %(len(renamed), len(failed), len(unrenamed)))
 
-    matched_and_unrenamed, no_match_and_unrenamed = OMERO_preprocess.find_matches_in_PE_and_log(all_unrenamed, PE_log)
+    matched_and_unrenamed, no_match_and_unrenamed = OMERO_preprocess.find_matches_in_PE_and_log(unrenamed, PE_log)
     logging.info(len(no_match_and_unrenamed))
     if matched_and_unrenamed.shape[0] > 0:
         # Some measurements are not renamed and could be renamed, do it.
@@ -44,7 +44,7 @@ def main(args):
         matched_and_unrenamed.OMERO_project = matched_and_unrenamed.Tissue_1
 
         df_for_import = OMERO_preprocess.generate_tsv_for_import(
-                matched_and_unrenamed.copy()
+                matched_and_unrenamed.copy(),args.server
             )
         import_name = "%s_import_%s.tsv"\
             %(proj_code, datetime.today().strftime('%Y%m%d%H%M'))
@@ -70,6 +70,7 @@ if __name__ == "__main__":
     parser.add_argument("-stitched_root", required=True, type=str,
             help="Directory where the stitched images are stored")
     parser.add_argument("-proj_code", required=False, type=str)
+    parser.add_argument("-server", required=True, type=str)
     # parser.add_argument("-rename",
             # action='store_false', help="Rename the tif files")
     parser.add_argument('--rename', dest='rename', action='store_true')
