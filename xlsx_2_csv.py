@@ -35,7 +35,7 @@ def main(args):
         assert len(full_p) == 1
         export_loc = full_p[0].replace(measurement_anchor, "")
         df.loc[ind, "full_export_location"] = export_loc
-    df.to_csv(Path(args.xlsx).stem + ".csv", index=False)
+    df.to_csv(Path(args.xlsx).stem + ".tsv", index=False, sep="\t")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
