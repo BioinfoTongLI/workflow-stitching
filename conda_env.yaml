@@ -1,0 +1,11 @@
+name: image_process
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - dask
+  - dask-image
+  - tifffile=2020.7.24
+  - pip
+  - pip:
+    - apeer-ometiff-library
