@@ -1,21 +1,23 @@
 #!/usr/bin/env nextflow
 
-params.log = '/nfs/team283_imaging/TL_SYN/log_files/20200914_stitching_request_Jun.xlsx'
+params.log = '/nfs/team283_imaging/TL_SYN/log_files/20200917_stitching_request_Jun.xlsx'
 params.root = "/nfs/team283_imaging/0HarmonyExports/"
 params.zdim_mode = 'max'
+params.server = "internal.imaging.sanger.ac.uk"
 params.out_dir = "/nfs/0HarmonyStitched/"
+/*params.out_dir = "/home/ubuntu/Documents/acapella-stitching"*/
 do_stitching = false
 gap = 15000
 rename = !do_stitching
 
 process xlsx_to_csv {
     conda "pandas xlrd"
-    publishDir "/nfs/TL_SYN/log_files_processed/", mode:"copy"
+    storeDir "/nfs/TL_SYN/log_files_processed/"
     /*echo true*/
 
     output:
-    path "$stem*.csv" into csv_with_export_paths
-    stdout export_paths
+    path "$stem*.tsv" into csv_with_export_paths
+    /*stdout export_paths*/
 
     script:
     stem = file(params.log).baseName
@@ -24,9 +26,9 @@ process xlsx_to_csv {
     """
 }
 
-/*csv_with_export_paths.splitCsv(header:true)*/
-    /*.map{it.full_export_location}*/
-    /*.set{export_paths}*/
+csv_with_export_paths.splitCsv(header:true, sep:"\t")
+    .map{it.full_export_location}
+    .set{export_paths}
 
 process stitch {
     echo true
@@ -34,7 +36,8 @@ process stitch {
     // errorStrategy 'ignore'
 
     input:
-    each meas from export_paths.splitText()
+    /*each meas from export_paths.splitText()*/
+    val meas from export_paths
 
     when:
     do_stitching
@@ -50,6 +53,7 @@ process stitch {
 
 
 process rename {
+    cache "lenient"
     echo true
     publishDir '/nfs/TL_SYN/tsv', mode:"copy"
     conda 'tqdm xlrd pandas'
@@ -58,11 +62,47 @@ process rename {
     rename
 
     output:
-    path '*.tsv'
+    path '*.tsv' into import_csv
 
     script:
-    proj_code = 'LY_BRC'
+    proj_code = 'JSP_HSS'
     """
-    python ${workflow.projectDir}/process_log.py -xlsx "$params.log" -stitched_root "${params.out_dir}/$proj_code" -proj_code ${proj_code} --rename
+    python ${workflow.projectDir}/process_log.py -xlsx "$params.log" -stitched_root "${params.out_dir}${proj_code}" -proj_code ${proj_code} -server ${params.server} --rename
+    """
+}
+
+
+process generate_rendering {
+    echo true
+    cache "lenient"
+    conda 'conda_env.yaml'
+    publishDir "/nfs/TL_SYN/ymls", mode:"copy"
+
+    when:
+    rename
+
+    input:
+    path tsv from import_csv
+
+    output:
+    tuple path(tsv), path("*_render.yml") into for_moving_ymls
+
+    script:
+    """
+    python ${workflow.projectDir}/generate_rendering.py -tsv $tsv
+    """
+}
+
+
+process move_yml_to_stitched_img_folder {
+    echo true
+    conda 'conda_env.yaml'
+
+    input:
+    tuple path(tsv), path(ymls) from for_moving_ymls
+
+    script:
+    """
+    python ${workflow.projectDir}/move_yml_to_img_folder.py -tsv "$tsv" -ymls $ymls
     """
 }
