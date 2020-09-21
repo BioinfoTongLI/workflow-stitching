@@ -24,7 +24,7 @@ def main(args):
     proj_code = args.proj_code
 
     PE_log = OMERO_preprocess.preprocess_log(args.xlsx.name)
-    logging.info("Project %s has in total %s measurements" %(proj_code, PE_log.shape[0]))
+    logging.info("Project %s spreadsheet has in total %s measurements" %(proj_code, PE_log.shape[0]))
 
     logging.info(args.stitched_root)
     renamed, failed, unrenamed = \
@@ -35,8 +35,9 @@ def main(args):
             %(len(renamed), len(failed), len(unrenamed)))
 
     matched_and_unrenamed, no_match_and_unrenamed = OMERO_preprocess.find_matches_in_PE_and_log(unrenamed, PE_log)
-    logging.info(len(no_match_and_unrenamed))
-    if matched_and_unrenamed.shape[0] > 0:
+
+    if len(matched_and_unrenamed) > 0:
+        matched_and_unrenamed = pd.concat(matched_and_unrenamed, axis=1).T
         # Some measurements are not renamed and could be renamed, do it.
         matched_and_unrenamed = OMERO_preprocess.generate_columns_for_OMERO(matched_and_unrenamed)
 
@@ -59,7 +60,7 @@ def main(args):
                 shutil.move(rename_subset.loc[i].tif_path,
                         rename_subset.loc[i].new_tif_path)
     else:
-        logging.info('All images reanmed')
+        logging.info('All images renamed')
 
 
 if __name__ == "__main__":
