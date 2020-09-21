@@ -24,8 +24,14 @@ def generate_yaml(meas):
         md = omexmlClass.OMEXML(fh.ome_metadata)
 
     pixels = md.image().Pixels
-    ch_names = meas["Ch_names"].split("_")
+    ch_names = meas["Ch_name_map"].split("_")
     ch_names = ch_names[:pixels.SizeC]
+    ch_maps = {}
+    for m in ch_names:
+        ch_maps[m.split(":")[0]] = m.split(":")[1]
+    ome_ch_names = pixels.get_channel_names()
+    ch_names = [ch_maps[ch] for ch in ome_ch_names]
+    # print(ch_names)
 
     z_ind = int(np.floor(pixels.SizeZ/2))
     print(pixels.SizeZ, z_ind)

@@ -92,7 +92,7 @@ def find_matches_in_PE_and_log(file_list, PE_log):
         if current_line is not None:
             matched_log.append(current_line)
     # return pd.DataFrame(matched_log), no_matched_log
-    return pd.concat(matched_log, axis=1).T, no_matched_log
+    return matched_log, no_matched_log
 
 
 def generate_omero_dataset(x):
@@ -150,11 +150,17 @@ def generate_tsv_for_import(full_df, server_add):
 
     full_df =  full_df.assign(filename = lambda x: [s.split("/")[-1] for s in x.new_tif_path])
 
-    tar_chs = [col for col in full_df.columns if col.startswith("Target")]
-    ch_names = full_df.apply(lambda row: "_".join([str(row.loc[col]) for col in tar_chs]), axis=1)
+    ch_prob_cols = [col for col in full_df.columns if col.startswith("Channel")]
+    tar_ch_cols = [s.replace("Channel", "Target") for s in ch_prob_cols]
 
-    df_for_import = full_df[["location","filename", "Project", "OMERO_internal_group", "OMERO_internal_users", "OMERO_project", "OMERO_DATASET"]]
+    ch_name_map = full_df.apply(lambda row:
+            "_".join([str(row.loc[ch_prob_cols[i]]) + ":" + str(row.loc[tar_ch_cols[i]])
+                for i, ch_prob in enumerate(ch_prob_cols)]),
+            axis=1
+        )
+
+    df_for_import = full_df[["location","filename", "Project", "OMERO_internal_group", "OMERO_internal_users", "OMERO_project", "OMERO_DATASET", "tif_path", "new_tif_path"]]
     df_for_import["OMERO_SERVER"] = server_add
-    df_for_import["Ch_names"] = ch_names
+    df_for_import["Ch_name_map"] = ch_name_map
 
     return df_for_import
