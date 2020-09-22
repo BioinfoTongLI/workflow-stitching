@@ -1,18 +1,19 @@
 #!/usr/bin/env nextflow
 
-params.log = '/nfs/team283_imaging/TL_SYN/log_files/20200917_stitching_request_Jun.xlsx'
+params.log = '/nfs/team283_imaging/TL_SYN/log_files/NS_DSP 12R.xlsx'
 params.root = "/nfs/team283_imaging/0HarmonyExports/"
 params.zdim_mode = 'max'
 params.server = "internal.imaging.sanger.ac.uk"
-params.out_dir = "/nfs/0HarmonyStitched/"
+params.out_dir = "/nfs/team283_imaging/0HarmonyStitched/"
 /*params.out_dir = "/home/ubuntu/Documents/acapella-stitching"*/
 do_stitching = false
 gap = 15000
 rename = !do_stitching
 
+
 process xlsx_to_csv {
-    conda "pandas xlrd"
-    storeDir "/nfs/TL_SYN/log_files_processed/"
+    conda 'conda_env.yaml'
+    storeDir "/nfs/team283_imaging/TL_SYN/log_files_processed/"
     /*echo true*/
 
     output:
@@ -55,17 +56,17 @@ process stitch {
 process rename {
     cache "lenient"
     echo true
-    publishDir '/nfs/TL_SYN/tsv', mode:"copy"
-    conda 'tqdm xlrd pandas'
+    publishDir '/nfs/team283_imaging/0Misc/tsv_for_import', mode:"copy"
+    conda 'conda_env.yaml'
 
     when:
     rename
 
     output:
-    path '*.tsv' into import_csv
+    path "${proj_code}*.tsv" optional true into import_csv
 
     script:
-    proj_code = 'JSP_HSS'
+    proj_code = 'NS_DSP'
     """
     python ${workflow.projectDir}/process_log.py -xlsx "$params.log" -stitched_root "${params.out_dir}${proj_code}" -proj_code ${proj_code} -server ${params.server} --rename
     """
@@ -76,7 +77,7 @@ process generate_rendering {
     echo true
     cache "lenient"
     conda 'conda_env.yaml'
-    publishDir "/nfs/TL_SYN/ymls", mode:"copy"
+    publishDir "/nfs/team283_imaging/TL_SYN/ymls", mode:"copy"
 
     when:
     rename
@@ -85,7 +86,7 @@ process generate_rendering {
     path tsv from import_csv
 
     output:
-    tuple path(tsv), path("*_render.yml") into for_moving_ymls
+    tuple path(tsv), path("*.render.yml") into for_moving_ymls
 
     script:
     """
