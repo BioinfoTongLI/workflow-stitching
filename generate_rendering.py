@@ -48,17 +48,16 @@ def generate_yaml(meas):
     for i, ind in enumerate(target_z_indexes):
         current_setting = {}
         plane = img[ind].compute()
-        win_start = int(np.percentile(plane, 1))
-        win_end = int(np.percentile(plane, 98))
+        win_start, win_end = np.percentile(plane, [1, 99])
         print(win_start, win_end)
         current_setting["active"] = True
         current_setting["color"] = default_colors[i]
         current_setting["label"] = ch_names[i]
-        current_setting["end"] = win_end
-        current_setting["start"] = win_start
+        current_setting["end"] = int(win_end)
+        current_setting["start"] = int(win_start)
 
         yaml_content[ch_flag][i + 1] = current_setting
-    with open(r'%s_render.yml' %meas["filename"], 'w') as file:
+    with open(r'%s.render.yml' %meas["filename"], 'w') as file:
         documents = yaml.dump(yaml_content, file)
         print(documents)
 
