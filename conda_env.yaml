@@ -5,7 +5,9 @@ channels:
 dependencies:
   - dask
   - dask-image
-  - tifffile=2020.7.24
+  - tqdm
+  - xlrd
+  - tifffile
   - pip
   - pip:
     - apeer-ometiff-library
