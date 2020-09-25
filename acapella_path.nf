@@ -58,7 +58,7 @@ process post_process {
     cache "lenient"
     echo true
     conda 'conda_env.yaml'
-    /*storeDir './single_tsvs'*/
+    storeDir './single_tsvs'
 
     input:
     path meas_folder from stitched_meas_for_log
