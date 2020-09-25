@@ -18,14 +18,14 @@ from datetime import datetime
 def main(args):
     df = pd.concat([pd.read_csv(tsv, sep="\t") for tsv in args.tsvs])
     df["location"] = args.export_dir + args.project_code + "/" +  df.PE_folder
-    import_df = df[["location", "filename", "Project", "OMERO_internal_group", "OMERO_internal_users", "OMERO_project", "OMERO_DATASET"]]
+    # import_df = df[["location", "filename", "Project", "OMERO_internal_group", "OMERO_internal_users", "OMERO_project", "OMERO_DATASET", "OMERO_SERVER"]]
     for i in range(0, df.shape[0]):
         line = df.iloc[i]
         tmp_p = "/".join([str(line.location), str(df.iloc[i].filename)])
         assert Path(tmp_p).exists()
     import_name = "%s_import_%s.tsv"\
             %(args.project_code, datetime.today().strftime('%Y%m%d%H%M'))
-    import_df.to_csv(import_name, sep="\t", index=False)
+    df.to_csv(import_name, sep="\t", index=False)
 
 
 if __name__ == "__main__":
