@@ -19,22 +19,22 @@ from glob import glob
 def main(args):
     df = pd.read_excel(args.xlsx)
     df = df.dropna(axis=0, how="all")
-    measurement_anchor = "/Images/Index.idx.xml"
     for ind in df.index:
         row = df.loc[ind]
         if str(row.Automated_PlateID) != "nan":
             tmp_id = row.Automated_PlateID
         else:
             tmp_id = row.SlideID
-        line = "".join([args.root, row.Project, "/",
+        line = "".join([args.root, row.Export_location.replace("\\", "/"), "/",
             str(tmp_id),
             "*Measurement ",
-            str(row.Measurement),
-            measurement_anchor])
+            str(row.Measurement), "/",
+            args.PE_index_file_anchor])
         full_p = glob(line)
+        print(line, full_p)
         assert len(full_p) == 1
-        export_loc = full_p[0].replace(measurement_anchor, "")
-        df.loc[ind, "full_export_location"] = export_loc
+        export_loc = full_p[0].replace(args.PE_index_file_anchor, "")
+        df.loc[ind, "measurement_name"] = export_loc.replace(args.root, "")
     df.to_csv(Path(args.xlsx).stem + ".tsv", index=False, sep="\t")
 
 if __name__ == "__main__":
@@ -44,6 +44,8 @@ if __name__ == "__main__":
             required=True)
     parser.add_argument("-root", type=str,
             required=True)
+    parser.add_argument("-PE_index_file_anchor", type=str,
+            required=False, default="Images/Index.idx.xml")
 
     args = parser.parse_args()
 
