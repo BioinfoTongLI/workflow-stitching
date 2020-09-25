@@ -57,6 +57,7 @@ def generate_yaml(img_path, meas):
         current_setting["end"] = 0
         try:
             plane = img[ind].compute()
+            plane = plane[plane != 0]
             win_start, win_end = np.percentile(plane, [1, 99])
             print(win_start, win_end)
             current_setting["end"] = int(win_end)
@@ -66,6 +67,7 @@ def generate_yaml(img_path, meas):
             print("Dask image loading error, using default channel contrast setting")
 
         yaml_content[ch_flag][i + 1] = current_setting
+    return yaml_content
 
 
 def save_yaml(yaml_content, path):

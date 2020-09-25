@@ -62,6 +62,7 @@ def generate_yaml(meas):
             print("Dask image loading error, using default channel contrast setting")
 
         yaml_content[ch_flag][i + 1] = current_setting
+    print(yaml_content)
     with open(r'%s.render.yml' %meas["filename"], 'w') as file:
         documents = yaml.dump(yaml_content, file)
         print(documents)
