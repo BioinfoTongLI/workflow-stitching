@@ -48,7 +48,7 @@ def generate_yaml(img_path, meas):
     img = imread(img_path)
     ch_flag = "channels"
     yaml_content = {ch_flag:{}, "greyscale": False, "version": 2}
-    default_colors = ["1E88E5", "D81B60", "FFC107", "004D40", "E66100", "4B0092", "994F00"]
+    default_colors = ["56b4E9", "009E73", "F0E442", "0072B2", "CC79A7", "D55E00", "E69f00"]
     for i, ind in enumerate(target_z_indexes):
         current_setting = {}
         current_setting["active"] = True
