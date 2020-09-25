@@ -1,16 +1,15 @@
 #!/usr/bin/env nextflow
 
 mount_point = "/nfs/team283_imaging/"
-params.log = mount_point + '0Misc/log_files/RV_END for OMERO 250920.xlsx'
+params.log = mount_point + '0Misc/log_files/VK_C2L OMERO kr19.xlsx'
+params.proj_code = "VK_C2L"
+
 params.out_dir = mount_point + "0HarmonyStitched/"
 params.server = "internal.imaging.sanger.ac.uk"
-params.proj_code = "RV_END"
 params.zdim_mode = 'max'
 /*params.out_dir = "/home/ubuntu/Documents/acapella-stitching"*/
 
-do_stitching = true
 gap = 15000
-rename = !do_stitching
 
 
 process xlsx_to_csv {
@@ -41,9 +40,6 @@ process stitch {
     echo true
     /*errorStrategy 'ignore'*/
 
-    when:
-    do_stitching
-
     input:
     val meas from export_paths
 
@@ -73,8 +69,6 @@ process post_process {
     script:
     """
     python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_xlsx "$params.log" -server ${params.server}
-
-    #python ${workflow.projectDir}/process_log.py -xlsx "$params.log" -stitched_root "${params.out_dir}${params.proj_code}" -proj_code ${params.proj_code}
     """
 }
 

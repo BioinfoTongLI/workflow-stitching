@@ -118,6 +118,7 @@ def main(args):
             save_yaml(generate_yaml(p, line), args.dir + "/" + new_line["filename"])
             target_p = "/".join([str(Path(p).parent), new_line.filename])
             shutil.move(p, target_p)
+            assert Path(target_p).exists()
             all_lines.append(new_line)
         df = pd.DataFrame(all_lines)
         df.to_csv("%s.tsv" %args.dir, sep="\t", index=False)
