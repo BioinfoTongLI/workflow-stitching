@@ -16,3 +16,4 @@ nextflow.config
 tsvs/
 ymls/
 Epithelial*
+single_tsvs/
