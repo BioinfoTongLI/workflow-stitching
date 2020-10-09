@@ -1,55 +1,57 @@
 #!/usr/bin/env nextflow
 
 mount_point = "/nfs/team283_imaging/"
-params.log = mount_point + '0Misc/log_files/VK_C2L OMERO kr19.xlsx'
-params.proj_code = "VK_C2L"
+params.log = mount_point + '0Misc/log_files/testset.xlsx'
+params.proj_code = "test"
 
 params.out_dir = mount_point + "0HarmonyStitched/"
-params.server = "internal.imaging.sanger.ac.uk"
-params.zdim_mode = 'max'
-/*params.out_dir = "/home/ubuntu/Documents/acapella-stitching"*/
+params.server = "imaging.internal.sanger.ac.uk"
+/*params.server = "omero.sanger.ac.uk"*/
 
-gap = 15000
+params.z_mode = 'max'
 
 
 process xlsx_to_csv {
+    /*echo true*/
     cache "lenient"
     conda 'conda_env.yaml'
     publishDir mount_point + "/TL_SYN/log_files_processed/", mode:"copy"
-    /*echo true*/
 
     output:
     path "*.tsv" into csv_with_export_paths
-    /*stdout export_paths*/
 
     script:
     stem = file(params.log).baseName
     """
-    python ${workflow.projectDir}/xlsx_2_csv.py -xlsx "$params.log" -root $mount_point
+    python ${workflow.projectDir}/xlsx_2_tsv.py -xlsx "$params.log" -root $mount_point
     """
 }
 
 csv_with_export_paths.splitCsv(header:true, sep:"\t")
-    .map{it.measurement_name}
-    .set{export_paths}
+    .map{it -> [it.measurement_name, it.Stitching_Z, it.gap]}
+    .set{stitching_features}
+
+/*stitching_features.view{it}*/
 
 process stitch {
+    echo true
     storeDir params.out_dir +"/" + params.proj_code
     container 'acapella-tong:1.1.6'
     containerOptions '--volume ' + mount_point + ':/data_in/:ro'
-    echo true
-    /*errorStrategy 'ignore'*/
 
     input:
-    val meas from export_paths
+    tuple val(meas), val(z_mode), val(gap) from stitching_features
 
     output:
     path base into stitched_meas_for_log, stitched_meas_for_rendering
 
     script:
     base = file(meas).getName()
+    if (z_mode == ''){
+        z_mode  = 'max'
+    }
     """
-    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/Images/Index.idx.xml" -s OutputDir="./$base" -s ZProjection="${params.zdim_mode}" -s OutputFormat=tiff -s Silent=false -s Channels="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
+    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/Images/Index.idx.xml" -s OutputDir="./$base" -s ZProjection="${z_mode}" -s OutputFormat=tiff -s Silent=false -s Channels="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
     """
 }
 

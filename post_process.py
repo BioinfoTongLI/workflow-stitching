@@ -76,8 +76,13 @@ def save_yaml(yaml_content, path):
         print(documents)
 
 
-def generate_omero_dataset(serie):
-    SampleID = "-".join(serie.Sample_1.split("-")[:2])
+def generate_omero_dataset(serie, p):
+    if str(serie.SectionN) != "1":
+        current_section = re.search(".*/A.*_F(\d+)T.*ome.tiff", p).group(1)
+    else:
+        current_section = "1"
+
+    SampleID = "-".join(serie["Sample_%s" %current_section].split("-")[:2])
     SampleID_no_slash = SampleID.replace("/", ".")
     dataset_list = [SampleID_no_slash, serie.Target1, serie.Target2, serie.Target3, serie.Target4, serie.Target5, serie.Target6, serie.Target7]
     return "_".join([s for s in dataset_list if s != "nan"])
@@ -99,7 +104,6 @@ def main(args):
 
     assert selected.shape[0] == 1
     line = selected.iloc[0]
-    line["OMERO_DATASET"] = generate_omero_dataset(line)
     line["OMERO_project"] = line.Tissue_1
     line["OMERO_internal_group"] = 'Team283'
     line["OMERO_SERVER"] = args.server
@@ -112,14 +116,19 @@ def main(args):
         all_lines = []
         for p in unrenamed_imgs:
             new_line = line.copy()
-            new_name_list = [line.SlideID, line.OMERO_DATASET,
-                    "Meas" + meas_id, Path(p).name]
+            new_line["OMERO_DATASET"] = \
+                generate_omero_dataset(new_line, p)
+            new_name_list = [new_line.SlideID,
+                    new_line.OMERO_DATASET,
+                    "Meas" + meas_id,
+                    Path(p).name]
             new_line["filename"] = "_".join(new_name_list).replace("tiff", "tif")
-            save_yaml(generate_yaml(p, line), args.dir + "/" + new_line["filename"])
+            save_yaml(generate_yaml(p, new_line), args.dir + "/" + new_line["filename"])
             target_p = "/".join([str(Path(p).parent), new_line.filename])
             shutil.move(p, target_p)
             assert Path(target_p).exists()
             all_lines.append(new_line)
+
         df = pd.DataFrame(all_lines)
         df.to_csv("%s.tsv" %args.dir, sep="\t", index=False)
     else:
