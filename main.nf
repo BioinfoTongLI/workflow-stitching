@@ -14,7 +14,7 @@ params.z_mode = 'max'
 process xlsx_to_csv {
     /*echo true*/
     cache "lenient"
-    conda 'conda_env.yaml'
+    conda workflow.projectDir + 'conda_env.yaml'
     publishDir mount_point + "/TL_SYN/log_files_processed/", mode:"copy"
 
     output:
@@ -59,7 +59,7 @@ process stitch {
 process post_process {
     cache "lenient"
     echo true
-    conda 'conda_env.yaml'
+    conda workflow.projectDir + 'conda_env.yaml'
     storeDir './single_tsvs'
 
     input:
@@ -78,7 +78,7 @@ process post_process {
 process collect_tsvs{
     echo true
     publishDir mount_point + '0Misc/tsv_for_import', mode: "copy"
-    conda 'conda_env.yaml'
+    conda workflow.projectDir + 'conda_env.yaml'
 
     input:
     path tsvs from updated_log.collect{it}
