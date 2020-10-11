@@ -11,8 +11,6 @@ __pycache__*
 *.swp*
 *.xlsx
 
-nextflow.config
-
 tsvs/
 ymls/
 Epithelial*
