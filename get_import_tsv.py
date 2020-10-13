@@ -25,7 +25,7 @@ def main(args):
         print(tmp_p)
         assert Path(tmp_p).exists()
     import_name = "%s_import_%s.tsv"\
-            %(args.project_code, datetime.today().strftime('%Y%m%d%H%M'))
+            %(args.project_code, args.stamp)
     df.to_csv(import_name, sep="\t", index=False)
 
 
@@ -36,6 +36,7 @@ if __name__ == "__main__":
             required=True)
     parser.add_argument("-export_dir", type=str, required=True)
     parser.add_argument("-project_code", type=str, required=True)
+    parser.add_argument("-stamp", type=str, required=True)
 
     args = parser.parse_args()
 
