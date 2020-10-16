@@ -104,6 +104,11 @@ def main(args):
 
     assert selected.shape[0] == 1
     line = selected.iloc[0]
+
+    raw_export = imread("%s/%s/%s/Images/*.tiff" %(
+        args.mount_point, line.Export_location.replace("\\", "/"), args.dir))
+    line["Raw_Export_Size(Gb)"] = raw_export.nbytes / 1e9
+
     line["OMERO_project"] = line.Tissue_1
     line["OMERO_internal_group"] = 'Team283'
     line["OMERO_SERVER"] = args.server
@@ -127,12 +132,17 @@ def main(args):
             target_p = "/".join([str(Path(p).parent), new_line.filename])
             shutil.move(p, target_p)
             assert Path(target_p).exists()
+            img = imread(target_p)
+            new_line["Stitched_Size(Gb)"] = img.nbytes / 1e9
+            new_line["Stitched_axis_0"] = img.shape[-2]
+            new_line["Stitched_axis_1"] = img.shape[-1]
             all_lines.append(new_line)
 
         df = pd.DataFrame(all_lines)
         df.to_csv("%s.tsv" %args.dir, sep="\t", index=False)
     else:
         print("All renamed")
+
 
 
 if __name__ == "__main__":
@@ -145,6 +155,7 @@ if __name__ == "__main__":
             required=True)
 
     parser.add_argument("-server", type=str)
+    parser.add_argument("-mount_point", type=str)
 
     args = parser.parse_args()
 

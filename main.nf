@@ -48,11 +48,11 @@ process stitch {
 
     script:
     base = file(meas).getName()
-    if (z_mode == ''){
-        z_mode = 'max'
+    if (params.z_mode == ''){
+        params.z_mode = 'max'
     }
     """
-    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/Images/Index.idx.xml" -s OutputDir="./$base" -s ZProjection="${z_mode}" -s OutputFormat=tiff -s Silent=false -s Channels="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
+    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/Images/Index.idx.xml" -s OutputDir="./$base" -s ZProjection="${params.z_mode}" -s OutputFormat=tiff -s Silent=false -s Channels="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
     """
 }
 
@@ -71,14 +71,14 @@ process post_process {
 
     script:
     """
-    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_xlsx "$params.log" -server ${params.server}
+    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_xlsx "$params.log" -server ${params.server} -mount_point ${params.mount_point}
     """
 }
 
 
 process collect_tsvs{
     echo true
-    publishDir params.mount_point + '0Misc/tsv_for_import', mode: "copy"
+    publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"
     conda workflow.projectDir + '/conda_env.yaml'
 
     input:

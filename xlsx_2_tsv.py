@@ -25,13 +25,12 @@ def main(args):
             tmp_id = row.Automated_PlateID
         else:
             tmp_id = row.SlideID
-        line = "".join([args.root, row.Export_location.replace("\\", "/"), "/",
+        meas_path = "".join([args.root, row.Export_location.replace("\\", "/"), "/",
             str(tmp_id),
             "*Measurement ",
-            str(row.Measurement), "/",
-            args.PE_index_file_anchor])
-        full_p = glob(line)
-        print(line, full_p)
+            str(row.Measurement), "/"])
+        full_p = glob(meas_path + args.PE_index_file_anchor)
+        print(meas_path, full_p)
         assert len(full_p) == 1
         export_loc = full_p[0].replace(args.PE_index_file_anchor, "")
         df.loc[ind, "measurement_name"] = export_loc.replace(args.root, "")
