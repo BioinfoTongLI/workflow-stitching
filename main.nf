@@ -10,6 +10,7 @@ params.server = "imaging.internal.sanger.ac.uk"
 
 params.z_mode = 'none'
 params.stamp = ''
+params.gap = 2000
 
 
 process xlsx_to_tsv {
@@ -24,7 +25,7 @@ process xlsx_to_tsv {
     script:
     stem = file(params.log).baseName
     """
-    python ${workflow.projectDir}/xlsx_2_tsv.py -xlsx "$params.log" -root $params.mount_point
+    python ${workflow.projectDir}/xlsx_2_tsv.py -xlsx "$params.log" -root $params.mount_point -gap ${params.gap}
     """
 }
 
@@ -71,7 +72,7 @@ process post_process {
 
     script:
     """
-    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_xlsx "$params.log" -server ${params.server} -mount_point ${params.mount_point}
+    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_xlsx "$params.log" -server ${params.server} -mount_point ${params.mount_point} -z_mode ${params.z_mode}
     """
 }
 
@@ -85,9 +86,31 @@ process collect_tsvs{
     path tsvs from updated_log.collect{it}
 
     output:
-    path "${params.proj_code}*.tsv"
+    path "${params.proj_code}*${params.stamp}.tsv" into tsv_for_import
 
     """
     python ${workflow.projectDir}/get_import_tsv.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp $params.stamp
     """
 }
+
+params.trace_dir = ''
+
+trace_file = Channel.fromPath(params.trace_dir)
+
+process combine {
+    echo true
+    publishDir params.mount_point +"0Misc/stitching_merged_log", mode:"copy"
+
+    input:
+    path log_p from tsv_for_import
+    path trace from trace_file
+
+    output:
+    path "${params.proj_code}_merge_${params.stamp}.tsv"
+
+    script:
+    """
+    python ${workflow.projectDir}/log_trace_combine.py -log $log_p -trace ${trace} -out_stem ${params.proj_code}_merge_${params.stamp}
+    """
+}
+

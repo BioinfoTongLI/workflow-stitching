@@ -90,6 +90,7 @@ def generate_omero_dataset(serie, p):
 
 def main(args):
     log = pd.read_excel(args.log_xlsx).astype(str)
+    log.dropna(how="all", axis=0, inplace=True)
     m = re.search(r'(.*)__.*-Measurement\ (.*)', args.dir)
     slide_or_plateID = m.group(1)
     meas_id = m.group(2)
@@ -125,7 +126,7 @@ def main(args):
                 generate_omero_dataset(new_line, p)
             new_name_list = [new_line.SlideID,
                     new_line.OMERO_DATASET,
-                    "Meas" + meas_id,
+                    "Meas" + meas_id, args.z_mode,
                     Path(p).name]
             new_line["filename"] = "_".join(new_name_list).replace("tiff", "tif")
             save_yaml(generate_yaml(p, new_line), args.dir + "/" + new_line["filename"])
@@ -156,6 +157,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-server", type=str)
     parser.add_argument("-mount_point", type=str)
+    parser.add_argument("-z_mode", type=str)
 
     args = parser.parse_args()
 

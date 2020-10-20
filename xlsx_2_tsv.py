@@ -18,13 +18,14 @@ from glob import glob
 
 def main(args):
     df = pd.read_excel(args.xlsx)
+    df = df.dropna(how="all", axis=0)
     df = df.dropna(axis=0, how="all")
     for ind in df.index:
         row = df.loc[ind]
         if str(row.Automated_PlateID) != "nan":
-            tmp_id = row.Automated_PlateID
+            tmp_id = row.Automated_PlateID.strip()
         else:
-            tmp_id = row.SlideID
+            tmp_id = row.SlideID.strip()
         meas_path = "".join([args.root, row.Export_location.replace("\\", "/"), "/",
             str(tmp_id),
             "*Measurement ",
@@ -35,7 +36,7 @@ def main(args):
         export_loc = full_p[0].replace(args.PE_index_file_anchor, "")
         df.loc[ind, "measurement_name"] = export_loc.replace(args.root, "")
     if "gap" not in df.columns:
-        df["gap"] = 15000
+        df["gap"] = args.gap
     df.to_csv(Path(args.xlsx).stem + ".tsv", index=False, sep="\t")
 
 if __name__ == "__main__":
@@ -47,6 +48,8 @@ if __name__ == "__main__":
             required=True)
     parser.add_argument("-PE_index_file_anchor", type=str,
             required=False, default="Images/Index.idx.xml")
+    parser.add_argument("-gap", type=str,
+            required=True)
 
     args = parser.parse_args()
 
