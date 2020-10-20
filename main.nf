@@ -93,9 +93,9 @@ process collect_tsvs{
     """
 }
 
-params.trace_dir = ''
+params.trace_file = ''
 
-trace_file = Channel.fromPath(params.trace_dir)
+trace_file_p = Channel.fromPath(params.trace_file)
 
 process combine {
     echo true
@@ -103,7 +103,7 @@ process combine {
 
     input:
     path log_p from tsv_for_import
-    path trace from trace_file
+    path trace from trace_file_p
 
     output:
     path "${params.proj_code}_merge_${params.stamp}.tsv"
