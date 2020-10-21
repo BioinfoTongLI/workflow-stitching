@@ -10,13 +10,13 @@
 #Z_MODE='none'
 Z_MODE='max'
 GAP='2000'
-PROJ_CODE='RV_GON'
+PROJ_CODE='test'
 SERVER="imaging.internal.sanger.ac.uk"
 #SERVER="omero.sanger.ac.uk"
 
 MOUNT_POINT='/nfs/team283_imaging/'
 ARCHIV_LOCATION=$MOUNT_POINT'0Misc/'
-LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/2020.09.01 RV_GON Phenix log RNAscope fetal gonads.xlsx'
+LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/testset.xlsx'
 DATE_WITH_TIME=`date "+%Y%m%d%H%M"`
 TRACE_FILE="$ARCHIV_LOCATION/stitching_trace/${PROJ_CODE}_trace_${DATE_WITH_TIME}.tsv"
 TMP_NF_WORK='/lustre/scratch117/cellgen/team283/tl10/stitching_work'
