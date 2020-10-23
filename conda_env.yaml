@@ -7,5 +7,7 @@ dependencies:
   - xlrd
   - tifffile
   - pip
+  - pandas
+  - numpy
   - pip:
     - apeer-ometiff-library
