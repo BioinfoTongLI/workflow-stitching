@@ -38,6 +38,7 @@ csv_with_export_paths.splitCsv(header:true, sep:"\t")
 process stitch {
     echo true
     storeDir params.out_dir +"/" + params.proj_code
+    stageOutMode 'move'
     container 'acapella-tong:1.1.6'
     containerOptions '--volume ' + params.mount_point + ':/data_in/:ro'
 
