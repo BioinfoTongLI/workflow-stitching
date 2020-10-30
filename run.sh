@@ -6,6 +6,7 @@
 # Distributed under terms of the BSD-3 license.
 #
 
+#BSUB -R "span[host=node-11-3-2]"
 
 #Z_MODE='none'
 Z_MODE='max'
