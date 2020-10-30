@@ -14,7 +14,6 @@ import pandas as pd
 from glob import glob
 import re
 from pathlib import Path
-import shutil
 from dask_image.imread import imread
 from apeer_ometiff_library import omexmlClass, io
 import tifffile as tf
@@ -118,31 +117,30 @@ def main(args):
         line["OMERO_internal_users"] = 'ob5'
 
     unrenamed_imgs = glob(args.dir + "/A*T0.ome.tiff")
-    if len(unrenamed_imgs) > 0:
-        all_lines = []
-        for p in unrenamed_imgs:
-            new_line = line.copy()
-            new_line["OMERO_DATASET"] = \
-                generate_omero_dataset(new_line, p)
-            new_name_list = [new_line.SlideID,
-                    new_line.OMERO_DATASET,
-                    "Meas" + meas_id, args.z_mode,
-                    Path(p).name]
-            new_line["filename"] = "_".join(new_name_list).replace("tiff", "tif")
-            save_yaml(generate_yaml(p, new_line), args.dir + "/" + new_line["filename"])
-            target_p = "/".join([str(Path(p).parent), new_line.filename])
-            shutil.move(p, target_p)
-            assert Path(target_p).exists()
-            img = imread(target_p)
-            new_line["Stitched_Size(Gb)"] = img.nbytes / 1e9
-            new_line["Stitched_axis_0"] = img.shape[-2]
-            new_line["Stitched_axis_1"] = img.shape[-1]
-            all_lines.append(new_line)
+    all_lines = []
+    for p in unrenamed_imgs:
+        new_line = line.copy()
+        new_line["OMERO_DATASET"] = \
+            generate_omero_dataset(new_line, p)
+        new_name_list = [new_line.SlideID,
+                new_line.OMERO_DATASET,
+                "Meas" + meas_id, args.z_mode,
+                Path(p).name]
+        new_line["filename"] = "_".join(new_name_list).replace("tiff", "tif")
+        save_yaml(generate_yaml(p, new_line), args.dir + "/" + new_line["filename"])
+        renamed_p = "/".join([str(Path(p).parent), new_line.filename])
+        # shutil.move(p, target_p)
+        # assert Path(target_p).exists()
+        img = imread(p)
+        new_line["original_file_path"] = p
+        new_line["renamed_file_path"] = renamed_p
+        new_line["Stitched_Size(Gb)"] = img.nbytes / 1e9
+        new_line["Stitched_axis_0"] = img.shape[-2]
+        new_line["Stitched_axis_1"] = img.shape[-1]
+        all_lines.append(new_line)
 
-        df = pd.DataFrame(all_lines)
-        df.to_csv("%s.tsv" %args.dir, sep="\t", index=False)
-    else:
-        print("All renamed")
+    df = pd.DataFrame(all_lines)
+    df.to_csv("%s.tsv" %args.dir, sep="\t", index=False)
 
 
 

@@ -13,17 +13,21 @@ import argparse
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import shutil
 
 
 def main(args):
     df = pd.concat([pd.read_csv(tsv, sep="\t") for tsv in args.tsvs])
     df["location"] = args.export_dir + args.project_code + "/" +  df.PE_folder
-    # import_df = df[["location", "filename", "Project", "OMERO_internal_group", "OMERO_internal_users", "OMERO_project", "OMERO_DATASET", "OMERO_SERVER"]]
     for i in range(df.shape[0]):
         line = df.iloc[i]
-        tmp_p = "/".join([str(line.location), str(df.iloc[i].filename)])
-        print(tmp_p)
-        assert Path(tmp_p).exists()
+        root_fpath = "%s/0HarmonyStitched/%s/" %(args.mount_point, args.project_code)
+        try:
+            shutil.move(root_fpath + line.original_file_path,
+                    root_fpath + line.renamed_file_path)
+        except:
+            pass
+        assert Path(root_fpath + line.renamed_file_path).exists()
     import_name = "%s_import_%s.tsv"\
             %(args.project_code, args.stamp)
     df.to_csv(import_name, sep="\t", index=False)
@@ -37,6 +41,7 @@ if __name__ == "__main__":
     parser.add_argument("-export_dir", type=str, required=True)
     parser.add_argument("-project_code", type=str, required=True)
     parser.add_argument("-stamp", type=str, required=True)
+    parser.add_argument("-mount_point", type=str)
 
     args = parser.parse_args()
 

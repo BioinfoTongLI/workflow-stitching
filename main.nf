@@ -90,7 +90,7 @@ process collect_tsvs{
     path "${params.proj_code}*${params.stamp}.tsv" into tsv_for_import
 
     """
-    python ${workflow.projectDir}/get_import_tsv.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp $params.stamp
+    python ${workflow.projectDir}/get_import_tsv.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point}
     """
 }
 
