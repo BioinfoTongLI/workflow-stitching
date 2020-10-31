@@ -100,6 +100,7 @@ trace_file_p = Channel.fromPath(params.trace_file)
 
 process combine {
     echo true
+    errorStrategy "ignore"
     conda workflow.projectDir + '/conda_env.yaml'
     publishDir params.mount_point +"0Misc/stitching_merged_log", mode:"copy"
 
