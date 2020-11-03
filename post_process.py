@@ -33,8 +33,11 @@ def generate_yaml(img_path, meas):
             if meas[ch_prob] != "nan"}
 
     ome_ch_names = pixels.get_channel_names()
-    ch_names = [ch_maps[ch] for ch in ome_ch_names]
-    print(ch_names)
+    # print(ch_maps)
+    # print(img_path)
+    # print(ome_ch_names)
+    ch_names = [ch_maps[ch] if ch in ch_maps else "Background" for ch in ome_ch_names]
+    # print(ch_names)
 
     z_ind = int(np.floor(pixels.SizeZ/2))
     # print(pixels.SizeZ, z_ind)
@@ -102,42 +105,40 @@ def main(args):
             & (log.SlideID == slide_or_plateID)
         ]
 
-    assert selected.shape[0] == 1
-    line = selected.iloc[0]
-
-    raw_export = imread("%s/%s/%s/Images/*.tiff" %(
-        args.mount_point, line.Export_location.replace("\\", "/"), args.dir))
-    line["Raw_Export_Size(Gb)"] = raw_export.nbytes / 1e9
-
-    line["OMERO_project"] = line.Tissue_1
-    line["OMERO_internal_group"] = 'Team283'
-    line["OMERO_SERVER"] = args.server
-    line["PE_folder"] = args.dir
-    if line.OMERO_internal_users == "nan":
-        line["OMERO_internal_users"] = 'ob5'
-
-    unrenamed_imgs = glob(args.dir + "/A*T0.ome.tiff")
     all_lines = []
-    for p in unrenamed_imgs:
-        new_line = line.copy()
-        new_line["OMERO_DATASET"] = \
-            generate_omero_dataset(new_line, p)
-        new_name_list = [new_line.SlideID,
-                new_line.OMERO_DATASET,
-                "Meas" + meas_id, args.z_mode,
-                Path(p).name]
-        new_line["filename"] = "_".join(new_name_list).replace("tiff", "tif")
-        save_yaml(generate_yaml(p, new_line), args.dir + "/" + new_line["filename"])
-        renamed_p = "/".join([str(Path(p).parent), new_line.filename])
-        # shutil.move(p, target_p)
-        # assert Path(target_p).exists()
-        img = imread(p)
-        new_line["original_file_path"] = p
-        new_line["renamed_file_path"] = renamed_p
-        new_line["Stitched_Size(Gb)"] = img.nbytes / 1e9
-        new_line["Stitched_axis_0"] = img.shape[-2]
-        new_line["Stitched_axis_1"] = img.shape[-1]
-        all_lines.append(new_line)
+    for i in range(selected.shape[0]):
+        line = selected.iloc[i]
+
+        raw_export = imread("%s/%s/%s/Images/*.tiff" %(
+            args.mount_point, line.Export_location.replace("\\", "/"), args.dir))
+        line["Raw_Export_Size(Gb)"] = raw_export.nbytes / 1e9
+
+        line["OMERO_project"] = line.Tissue_1
+        line["OMERO_internal_group"] = 'Team283'
+        line["OMERO_SERVER"] = args.server
+        line["PE_folder"] = args.dir
+        if line.OMERO_internal_users == "nan":
+            line["OMERO_internal_users"] = 'ob5'
+
+        unrenamed_imgs = glob(args.dir + "/A*T0.ome.tiff")
+        for p in unrenamed_imgs:
+            new_line = line.copy()
+            new_line["OMERO_DATASET"] = \
+                generate_omero_dataset(new_line, p)
+            new_name_list = [new_line.SlideID,
+                    new_line.OMERO_DATASET,
+                    "Meas" + meas_id, args.z_mode,
+                    Path(p).name]
+            new_line["filename"] = "_".join(new_name_list).replace("tiff", "tif")
+            save_yaml(generate_yaml(p, new_line), args.dir + "/" + new_line["filename"])
+            renamed_p = "/".join([str(Path(p).parent), new_line.filename])
+            img = imread(p)
+            new_line["original_file_path"] = p
+            new_line["renamed_file_path"] = renamed_p
+            new_line["Stitched_Size(Gb)"] = img.nbytes / 1e9
+            new_line["Stitched_axis_0"] = img.shape[-2]
+            new_line["Stitched_axis_1"] = img.shape[-1]
+            all_lines.append(new_line)
 
     df = pd.DataFrame(all_lines)
     df.to_csv("%s.tsv" %args.dir, sep="\t", index=False)

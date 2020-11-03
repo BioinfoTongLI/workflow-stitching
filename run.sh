@@ -11,13 +11,13 @@
 #Z_MODE='none'
 Z_MODE='max'
 GAP='4000'
-PROJ_CODE='AL_ORG'
-#SERVER="imaging.internal.sanger.ac.uk"
-SERVER="omero.sanger.ac.uk"
+PROJ_CODE='KR_C19'
+SERVER="imaging.internal.sanger.ac.uk"
+#SERVER="omero.sanger.ac.uk"
 
 MOUNT_POINT='/nfs/team283_imaging/'
 ARCHIV_LOCATION=$MOUNT_POINT'0Misc/'
-LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/20201030_stitching_request_Jun.xlsx'
+LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/KR_C19_exported_20201028.xlsx'
 DATE_WITH_TIME=`date "+%Y%m%d%H%M"`
 TRACE_FILE="$ARCHIV_LOCATION/stitching_trace/${PROJ_CODE}_trace_${DATE_WITH_TIME}.tsv"
 TMP_NF_WORK=$HOME'/stitching_work'

@@ -38,9 +38,11 @@ csv_with_export_paths.splitCsv(header:true, sep:"\t")
 process stitch {
     echo true
     storeDir params.out_dir +"/" + params.proj_code
-    stageOutMode 'move'
+    errorStrategy "ignore"
     container 'acapella-tong:1.1.6'
     containerOptions '--volume ' + params.mount_point + ':/data_in/:ro'
+
+    maxForks 5
 
     input:
     tuple val(meas), val(z_mode), val(gap) from stitching_features
@@ -60,10 +62,13 @@ process stitch {
 
 
 process post_process {
-    cache "lenient"
+    /*cache "lenient"*/
     echo true
+    errorStrategy "ignore"
     conda workflow.projectDir + '/conda_env.yaml'
-    /*storeDir workflow.projectDir + '/single_tsvs'*/
+    storeDir params.mount_point + '0Misc/stitching_single_tsvs'
+
+    maxForks 5
 
     input:
     path meas_folder from stitched_meas_for_log
