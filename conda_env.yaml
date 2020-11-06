@@ -1,0 +1,13 @@
+name: image_process
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - dask-image
+  - xlrd
+  - tifffile
+  - pip
+  - pandas
+  - numpy
+  - pip:
+    - apeer-ometiff-library
