@@ -16,14 +16,9 @@ import numpy as np
 from glob import glob
 
 
-def clean_up(df):
-    df = df.dropna(how="all", axis=0)
-    return df.dropna(axis=0, how="all")
-
-
 def main(args):
     df = pd.read_excel(args.xlsx)
-    df = clean_up(df)
+    df = df.dropna(how="all", axis=0)
     for ind in df.index:
         row = df.loc[ind]
         if str(row.Automated_PlateID) != "nan":
