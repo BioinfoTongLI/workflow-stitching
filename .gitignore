@@ -1,6 +1,5 @@
 # Nextflow-related
-.nextflow/
-.nextflow.log*
+.nextflow*
 work/
 tmp/
 logs/
