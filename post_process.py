@@ -93,7 +93,7 @@ def generate_omero_dataset(serie, p):
 def main(args):
     log = pd.read_excel(args.log_xlsx).astype(str)
     log.dropna(how="all", axis=0, inplace=True)
-    m = re.search(r'(.*)__.*-Measurement\ (.*)', args.dir)
+    m = re.search(r'(.*)__.*-Measurement\ (\d.*)_.*_.*_.*_\w+', args.dir)
     slide_or_plateID = m.group(1)
     meas_id = m.group(2)
     selected = log[
@@ -105,12 +105,14 @@ def main(args):
             & (log.SlideID == slide_or_plateID)
         ]
 
+    # print(selected)
     all_lines = []
     for i in range(selected.shape[0]):
         line = selected.iloc[i]
 
         raw_export = imread("%s/%s/%s/Images/*.tiff" %(
-            args.mount_point, line.Export_location.replace("\\", "/"), args.dir))
+            args.mount_point, line.Export_location.replace("\\", "/"),
+            args.dir.replace("_" + line.SlideID, "").replace("_max", "").replace("_none", "")))
         line["Raw_Export_Size(Gb)"] = raw_export.nbytes / 1e9
 
         line["OMERO_project"] = line.Tissue_1
@@ -120,7 +122,7 @@ def main(args):
         if line.OMERO_internal_users == "nan":
             line["OMERO_internal_users"] = 'ob5'
 
-        unrenamed_imgs = glob(args.dir + "/A*T0.ome.tiff")
+        unrenamed_imgs = glob(args.dir + "/A*T0_*.ome.tiff")
         for p in unrenamed_imgs:
             new_line = line.copy()
             new_line["OMERO_DATASET"] = \
