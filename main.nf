@@ -72,7 +72,7 @@ process post_process {
 
     script:
     """
-    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_xlsx "$params.log" -server ${params.server} -mount_point ${params.mount_point} -z_mode ${params.z_mode}
+    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_xlsx "$params.log" -server ${params.server} -mount_point ${params.mount_point}
     """
 }
 

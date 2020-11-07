@@ -129,7 +129,7 @@ def main(args):
                 generate_omero_dataset(new_line, p)
             new_name_list = [new_line.SlideID,
                     new_line.OMERO_DATASET,
-                    "Meas" + meas_id, args.z_mode,
+                    "Meas" + meas_id,
                     Path(p).name]
             new_line["filename"] = "_".join(new_name_list).replace("tiff", "tif")
             save_yaml(generate_yaml(p, new_line), args.dir + "/" + new_line["filename"])
@@ -158,7 +158,6 @@ if __name__ == "__main__":
 
     parser.add_argument("-server", type=str)
     parser.add_argument("-mount_point", type=str)
-    parser.add_argument("-z_mode", type=str)
 
     args = parser.parse_args()
 
