@@ -12,19 +12,19 @@
 Z_MODE='max'
 GAP='4000'
 PROJ_CODE='KR_C19'
-SERVER="imaging.internal.sanger.ac.uk"
-#SERVER="omero.sanger.ac.uk"
+SERVER="imaging.internal.sanger.ac.uk" #Sanger internal server
+#SERVER="omero.sanger.ac.uk" #Sanger external server
 
 MOUNT_POINT='/nfs/team283_imaging/'
 ARCHIV_LOCATION=$MOUNT_POINT'0Misc/'
 LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/KR_C19_exported_20201028.xlsx'
+
 DATE_WITH_TIME=`date "+%Y%m%d%H%M"`
 TRACE_FILE="$ARCHIV_LOCATION/stitching_trace/${PROJ_CODE}_trace_${DATE_WITH_TIME}.tsv"
 TMP_NF_WORK=$HOME'/stitching_work'
-#TMP_NF_WORK=$HOME'/stitching_work'
 
 
-NXF_OPTS='-Dleveldb.mmap=false' NXF_WORK=$TMP_NF_WORK LSB_DEFAULTGROUP='team283' nextflow run /home/ubuntu/Documents/acapella-stitching/main.nf \
+NXF_OPTS='-Dleveldb.mmap=false' NXF_WORK=$TMP_NF_WORK LSB_DEFAULTGROUP='team283' nextflow run main.nf \
 	-with-trace $TRACE_FILE \
 	--proj_code $PROJ_CODE \
 	--stamp $DATE_WITH_TIME \
