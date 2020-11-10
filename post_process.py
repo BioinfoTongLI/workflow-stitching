@@ -75,7 +75,6 @@ def generate_yaml(img_path, meas):
 def save_yaml(yaml_content, path):
     with open(r'%s.render.yml' %path, 'w') as file:
         documents = yaml.dump(yaml_content, file)
-        print(documents)
 
 
 def generate_omero_dataset(serie, p):
@@ -110,10 +109,15 @@ def main(args):
     for i in range(selected.shape[0]):
         line = selected.iloc[i]
 
-        raw_export = imread("%s/%s/%s/Images/*.tiff" %(
-            args.mount_point, line.Export_location.replace("\\", "/"),
-            args.dir.replace("_" + line.SlideID, "").replace("_max", "").replace("_none", "")))
-        line["Raw_Export_Size(Gb)"] = raw_export.nbytes / 1e9
+        try:
+            raw_export = imread("%s/%s/%s/Images/*.tiff" %(
+                args.mount_point, line.Export_location.replace("\\", "/"),
+                args.dir.replace("_max", "").replace("_none", "")))
+            raw_size = raw_export.nbytes / 1e9
+        except:
+            # Multislide plate, hard to know how large this acquisition is
+            raw_size = ""
+        line["Raw_Export_Size(Gb)"] = raw_size
 
         line["OMERO_project"] = line.Tissue_1
         line["OMERO_internal_group"] = 'Team283'
