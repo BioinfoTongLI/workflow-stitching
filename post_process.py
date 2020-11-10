@@ -92,7 +92,7 @@ def generate_omero_dataset(serie, p):
 def main(args):
     log = pd.read_excel(args.log_xlsx).astype(str)
     log.dropna(how="all", axis=0, inplace=True)
-    m = re.search(r'(.*)__.*-Measurement\ (\d.*)_.*_.*_.*_\w+', args.dir)
+    m = re.search(r'(.*)__.*-Measurement\ (\d.*)_(max|none)', args.dir)
     slide_or_plateID = m.group(1)
     meas_id = m.group(2)
     selected = log[
