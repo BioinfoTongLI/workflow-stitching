@@ -24,7 +24,7 @@ def main(args):
         if "acapella -license /home/acapella/AcapellaLicense.txt" in l.script:
             # print(l.script)
             slide_or_plate = re.search(".*/(.*)__.*", l.script).group(1)
-            meas_id = re.search(".*Measurement (.*)\" -s ZProj.*", l.script).group(1)
+            meas_id = re.search(".*Measurement (.*)_\w+\" -s ZProj.*", l.script).group(1)
             selected = log_df[(log_df.Measurement.astype(str) == meas_id) &
                 (log_df.SlideID == slide_or_plate)]
             if selected.shape[0] < 1:
