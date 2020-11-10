@@ -34,6 +34,8 @@ def main(args):
         assert len(full_p) == 1
         export_loc = full_p[0].replace(args.PE_index_file_anchor, "")
         df.loc[ind, "measurement_name"] = export_loc.replace(args.root, "")
+        if row.Stitching_Z not in ["max", "none"]:
+            df.loc[ind, Stitching_Z] = args.zmode
     if "gap" not in df.columns:
         df["gap"] = args.gap
     df.to_csv(Path(args.xlsx).stem + ".tsv", index=False, sep="\t")
@@ -48,6 +50,8 @@ if __name__ == "__main__":
     parser.add_argument("-PE_index_file_anchor", type=str,
             required=False, default="Images/Index.idx.xml")
     parser.add_argument("-gap", type=str,
+            required=True)
+    parser.add_argument("-zmode", type=str,
             required=True)
 
     args = parser.parse_args()
