@@ -1,6 +1,6 @@
 A nextflow pipeline to stitch Harmony exports into ome.tiffs with customized file names/rendering
 
-You'll need the spreadsheet (.xlsx), the acapella docker image:
+You'll need the spreadsheet (.xlsx), the acapella docker image and have `conda` installed:
 
 ## Local run:
 Use `docker load --input /nfs/team283_imaging/0Misc/Acapella_stitching/acapella-1.1.7` to load the docker images
