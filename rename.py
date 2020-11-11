@@ -19,7 +19,7 @@ import shutil
 def main(args):
     df = pd.concat([pd.read_csv(tsv, sep="\t") for tsv in args.tsvs])
     df["location"] = args.export_dir + args.project_code + "/" +  df.PE_folder
-    unrenmaed = []
+    # unrenmaed = []
     for i in range(df.shape[0]):
         line = df.iloc[i]
         root_fpath = "%s/0HarmonyStitched/%s/" %(args.mount_point, args.project_code)
@@ -30,11 +30,11 @@ def main(args):
                 shutil.move(root_fpath + line.original_file_path, target_name)
             except:
                 print(target_name)
-                unrenmaed.append(line)
-    unrenmaed_df = pd.concat(unrenmaed, axis=1).T
-    unrenamed_file_name = "%s_unrenamed_%s.tsv"\
-            %(args.project_code, args.stamp)
-    unrenmaed_df.to_csv(unrenamed_file_name, sep="\t", index=False)
+                # unrenmaed.append(line)
+    # unrenmaed_df = pd.concat(unrenmaed, axis=1).T
+    # unrenamed_file_name = "%s_unrenamed_%s.tsv"\
+            # %(args.project_code, args.stamp)
+    # unrenmaed_df.to_csv(unrenamed_file_name, sep="\t", index=False)
 
     import_name = "%s_import_%s.tsv"\
             %(args.project_code, args.stamp)
