@@ -79,76 +79,73 @@ def save_yaml(yaml_content, path):
 
 def generate_omero_dataset(serie, p):
     if str(serie.SectionN) != "1":
-        current_section = re.search(".*/A.*_F(\d+)T.*ome.tiff", p).group(1)
+        current_section = re.search(".*/A.*_F(\d)T.*.tiff", p).group(1)
     else:
         current_section = "1"
 
-    SampleID = "-".join(serie["Sample_%s" %current_section].split("-")[:2])
+    SampleID = "-".join(str(serie["Sample_%s" %str(current_section)]).split("-")[:2])
     SampleID_no_slash = SampleID.replace("/", ".")
     dataset_list = [SampleID_no_slash, serie.Target1, serie.Target2, serie.Target3, serie.Target4, serie.Target5, serie.Target6, serie.Target7]
+    dataset_list = [str(s) for s in dataset_list]
     return "_".join([s for s in dataset_list if s != "nan"])
 
 
+def process_one_slide(row, params):
+
+    slidePos = int(float(row.SlideN)) if not np.isnan(row.SlideN) else "*"
+    img_path_reg = "%s/A%s_F*.ome.tiff" %(params.dir, slidePos)
+    img_paths = glob(img_path_reg)
+    assert len(img_paths) >= 1
+
+    try:
+        raw_export = imread("%s/%s/%s/images/*.tiff" %(
+            params.mount_point, row.export_location.replace("\\", "/"),
+            params.dir.replace("_max", "").replace("_none", "")))
+        raw_size = raw_export.nbytes / 1e9
+    except:
+        # multislide plate, hard to know how large this acquisition is
+        raw_size = ""
+    row["raw_export_size(gb)"] = raw_size
+    row["OMERO_project"] = row.Tissue_1
+    row["OMERO_internal_group"] = 'Team283'
+    row["OMERO_SERVER"] = params.server
+    # row["PE_folder"] = params.dir
+    if row.OMERO_internal_users == "nan":
+        row["OMERO_internal_users"] = 'ob5'
+
+    all_sections = []
+    for img_p in img_paths:
+        # print(img_p)
+        row_section = row.copy()
+        row_section["OMERO_DATASET"] = generate_omero_dataset(row, img_p)
+
+        new_name_list = [row_section.SlideID,
+                row_section.OMERO_DATASET,
+                "Meas" + str(row_section.Measurement),
+                Path(img_p).name]
+        row_section["filename"] = "_".join(new_name_list).replace("tiff", "tif")
+
+        save_yaml(generate_yaml(img_p, row_section), params.dir + "/" + row_section["filename"])
+
+        renamed_p = "/".join([str(Path(img_p).parent), row_section.filename])
+        img = imread(img_p)
+        row_section["original_file_path"] = img_p
+        row_section["renamed_file_path"] = renamed_p
+        row_section["Stitched_Size(Gb)"] = img.nbytes / 1e9
+        row_section["Stitched_axis_0"] = img.shape[-2]
+        row_section["Stitched_axis_1"] = img.shape[-1]
+        all_sections.append(row_section)
+
+    return pd.DataFrame(all_sections)
+
+
 def main(args):
-    log = pd.read_excel(args.log_xlsx).astype(str)
-    log.dropna(how="all", axis=0, inplace=True)
-    m = re.search(r'(.*)__.*-Measurement\ (\d.*)_(max|none)', args.dir)
-    slide_or_plateID = m.group(1)
-    meas_id = m.group(2)
-    selected = log[
-            (log.Measurement == meas_id)
-            & (log.Automated_PlateID == slide_or_plateID)]
-    if selected.shape[0] == 0:
-        selected = log[
-            (log.Measurement == meas_id)
-            & (log.SlideID == slide_or_plateID)
-        ]
-
-    # print(selected)
-    all_lines = []
-    for i in range(selected.shape[0]):
-        line = selected.iloc[i]
-
-        try:
-            raw_export = imread("%s/%s/%s/Images/*.tiff" %(
-                args.mount_point, line.Export_location.replace("\\", "/"),
-                args.dir.replace("_max", "").replace("_none", "")))
-            raw_size = raw_export.nbytes / 1e9
-        except:
-            # Multislide plate, hard to know how large this acquisition is
-            raw_size = ""
-        line["Raw_Export_Size(Gb)"] = raw_size
-
-        line["OMERO_project"] = line.Tissue_1
-        line["OMERO_internal_group"] = 'Team283'
-        line["OMERO_SERVER"] = args.server
-        line["PE_folder"] = args.dir
-        if line.OMERO_internal_users == "nan":
-            line["OMERO_internal_users"] = 'ob5'
-
-        unrenamed_imgs = glob(args.dir + "/A*T0_*.ome.tiff")
-        for p in unrenamed_imgs:
-            new_line = line.copy()
-            new_line["OMERO_DATASET"] = \
-                generate_omero_dataset(new_line, p)
-            new_name_list = [new_line.SlideID,
-                    new_line.OMERO_DATASET,
-                    "Meas" + meas_id,
-                    Path(p).name]
-            new_line["filename"] = "_".join(new_name_list).replace("tiff", "tif")
-            save_yaml(generate_yaml(p, new_line), args.dir + "/" + new_line["filename"])
-            renamed_p = "/".join([str(Path(p).parent), new_line.filename])
-            img = imread(p)
-            new_line["original_file_path"] = p
-            new_line["renamed_file_path"] = renamed_p
-            new_line["Stitched_Size(Gb)"] = img.nbytes / 1e9
-            new_line["Stitched_axis_0"] = img.shape[-2]
-            new_line["Stitched_axis_1"] = img.shape[-1]
-            all_lines.append(new_line)
-
-    df = pd.DataFrame(all_lines)
-    df.to_csv("%s.tsv" %args.dir, sep="\t", index=False)
-
+    log = pd.read_csv(args.log_tsv, sep="\t")
+    all_sections = []
+    for i in range(log.shape[0]):
+        all_sections.append(process_one_slide(log.iloc[i] ,args))
+    pd.concat(all_sections).to_csv(
+            "%s.tsv" %args.dir, sep="\t", index=False)
 
 
 if __name__ == "__main__":
@@ -157,7 +154,7 @@ if __name__ == "__main__":
     parser.add_argument("-dir", type=str,
             required=True)
 
-    parser.add_argument("-log_xlsx", type=str,
+    parser.add_argument("-log_tsv", type=str,
             required=True)
 
     parser.add_argument("-server", type=str)
