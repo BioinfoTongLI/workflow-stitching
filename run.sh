@@ -17,7 +17,7 @@ SERVER="imaging.internal.sanger.ac.uk" #Sanger internal server
 
 MOUNT_POINT='/nfs/team283_imaging/'
 ARCHIV_LOCATION=$MOUNT_POINT'0Misc/'
-LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/KR_C19_exported_20201028.xlsx'
+LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/KR_C19_exported_20201028_latest.xlsx'
 
 DATE_WITH_TIME=`date "+%Y%m%d%H%M"`
 TRACE_FILE="$ARCHIV_LOCATION/stitching_trace/${PROJ_CODE}_trace_${DATE_WITH_TIME}.tsv"

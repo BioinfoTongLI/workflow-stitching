@@ -14,13 +14,13 @@ params.gap = 4000
 
 
 process xlsx_to_tsv {
-    echo true
+    /*echo true*/
     cache "lenient"
     conda workflow.projectDir + '/conda_env.yaml'
     /*publishDir params.mount_point + "/TL_SYN/log_files_processed/", mode:"copy"*/
 
     output:
-    path "*.tsv" into csv_with_export_paths
+    path "*.tsv" into tsvs_for_stitching, tsv_for_post
 
     script:
     """
@@ -28,11 +28,24 @@ process xlsx_to_tsv {
     """
 }
 
-csv_with_export_paths.splitCsv(header:true, sep:"\t")
+
+tsv_for_post
+    .flatten()
+    .map{it -> [it.baseName, it]}
+    /*.into{tsvs_with_names; test}*/
+    .set{tsvs_with_names}
+
+/*test.view{it}*/
+
+tsvs_for_stitching
+    .flatten()
+    .splitCsv(header:true, sep:"\t")
     .map{it -> [it.measurement_name, it.Stitching_Z, it.gap]}
+    .groupTuple()
+    .map{it -> [it[0], it[1][0], it[2][0]]}
     .set{stitching_features}
 
-/*stitching_features.view{it}*/
+/*tsv_for_post_process.view{it}*/
 
 process stitch {
     echo true
@@ -45,8 +58,9 @@ process stitch {
     input:
     tuple val(meas), val(z_mode), val(gap) from stitching_features
 
+
     output:
-    path "${base}_${z_mode}" into stitched_meas_for_log, stitched_meas_for_rendering
+    tuple val(base), path("${base}_${z_mode}") into stitched_meas_for_log
 
     script:
     base = file(meas).getName()
@@ -59,20 +73,23 @@ process stitch {
 process post_process {
     echo true
     conda workflow.projectDir + '/conda_env.yaml'
+    errorStrategy "retry"
     /*storeDir params.mount_point + '0Misc/stitching_single_tsvs'*/
     publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"
 
-    memory '45 GB'
+    maxRetries 5
+
+    /*memory '20 GB'*/
 
     input:
-    path meas_folder from stitched_meas_for_log
+    tuple val(meas), path(meas_folder), path(tsv) from stitched_meas_for_log.join(tsvs_with_names)
 
     output:
     path "${meas_folder}.tsv" into updated_log
 
     script:
     """
-    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_xlsx "$params.log" -server ${params.server} -mount_point ${params.mount_point}
+    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_tsv $tsv -server ${params.server} -mount_point ${params.mount_point}
     """
 }
 
