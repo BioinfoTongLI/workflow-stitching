@@ -17,9 +17,8 @@ from glob import glob
 
 
 def save_sub_df(sub):
-    export_name = sub.Export_name.unique()
-    assert len(sub.Export_name.unique()) == 1
-    sub.to_csv(export_name[0] + ".tsv", index=False, sep="\t")
+    meas_name = sub.measurement_name.unique()
+    sub.to_csv(Path(meas_name[0]).name + ".tsv", index=False, sep="\t")
 
 
 def main(args):
