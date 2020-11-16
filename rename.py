@@ -18,7 +18,7 @@ import shutil
 
 def main(args):
     df = pd.concat([pd.read_csv(tsv, sep="\t") for tsv in args.tsvs])
-    df["location"] = args.export_dir + args.project_code + "/" +  df.PE_folder
+    df["location"] = args.export_dir + args.project_code + "/" +  df.Meas_folder_with_zmode
     # unrenmaed = []
     for i in range(df.shape[0]):
         line = df.iloc[i]

@@ -109,7 +109,7 @@ def process_one_slide(row, params):
     row["OMERO_project"] = row.Tissue_1
     row["OMERO_internal_group"] = 'Team283'
     row["OMERO_SERVER"] = params.server
-    # row["PE_folder"] = params.dir
+    row["Meas_folder_with_zmode"] = params.dir
     if row.OMERO_internal_users == "nan":
         row["OMERO_internal_users"] = 'ob5'
 

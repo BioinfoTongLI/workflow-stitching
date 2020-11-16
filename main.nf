@@ -74,12 +74,12 @@ process post_process {
     echo true
     conda workflow.projectDir + '/conda_env.yaml'
     errorStrategy "retry"
-    /*storeDir params.mount_point + '0Misc/stitching_single_tsvs'*/
-    publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"
+    storeDir params.mount_point + '0Misc/stitching_single_tsvs'
+    /*publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"*/
 
     maxRetries 5
 
-    /*memory '20 GB'*/
+    /*memory '45 GB'*/
 
     input:
     tuple val(meas), path(meas_folder), path(tsv) from stitched_meas_for_log.join(tsvs_with_names)
