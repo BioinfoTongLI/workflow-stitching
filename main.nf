@@ -79,7 +79,7 @@ process post_process {
 
     maxRetries 5
 
-    /*memory '45 GB'*/
+    memory '45 GB'
 
     input:
     tuple val(meas), path(meas_folder), path(tsv) from stitched_meas_for_log.join(tsvs_with_names)
