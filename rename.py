@@ -19,18 +19,22 @@ import shutil
 def main(args):
     df = pd.concat([pd.read_csv(tsv, sep="\t") for tsv in args.tsvs])
     df["location"] = args.export_dir + args.project_code + "/" +  df.Meas_folder_with_zmode
+    root_fpath = "%s/0HarmonyStitched/%s/" %(args.mount_point, args.project_code)
+
+    for i in range(df.shape[0]):
+        line = df.iloc[i]
+        assert Path(root_fpath + line.original_file_path).exists()
+
     # unrenmaed = []
     for i in range(df.shape[0]):
         line = df.iloc[i]
-        root_fpath = "%s/0HarmonyStitched/%s/" %(args.mount_point, args.project_code)
         target_name = root_fpath + line.renamed_file_path
-        if not Path(target_name).exists():
-            try:
-                assert Path(root_fpath + line.original_file_path).exists()
-                shutil.move(root_fpath + line.original_file_path, target_name)
-            except:
-                print(target_name)
-                # unrenmaed.append(line)
+        try:
+            shutil.move(root_fpath + line.original_file_path, target_name)
+        except:
+            print(target_name)
+            # unrenmaed.append(line)
+
     # unrenmaed_df = pd.concat(unrenmaed, axis=1).T
     # unrenamed_file_name = "%s_unrenamed_%s.tsv"\
             # %(args.project_code, args.stamp)
