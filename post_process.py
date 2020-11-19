@@ -36,7 +36,7 @@ def generate_yaml(img_path, meas):
     # print(ch_maps)
     # print(img_path)
     # print(ome_ch_names)
-    ch_names = [ch_maps[ch] if ch in ch_maps else "Background" for ch in ome_ch_names]
+    ch_names = [str(ch_maps[ch]) if ch in ch_maps else "Background" for ch in ome_ch_names]
     # print(ch_names)
 
     z_ind = int(np.floor(pixels.SizeZ/2))
