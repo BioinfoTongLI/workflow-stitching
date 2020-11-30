@@ -91,10 +91,13 @@ def generate_omero_dataset(serie, p):
     return "_".join([s for s in dataset_list if s != "nan"])
 
 
-def process_one_slide(row, params):
+def process_one_slide(row, params, redo_rendering_only=False):
 
     slidePos = int(float(row.SlideN)) if not np.isnan(row.SlideN) else "*"
-    img_path_reg = "%s/A%s_F*.ome.tiff" %(params.dir, slidePos)
+    if params.redo_rendering_only:
+        img_path_reg = "%s/*A%s_F*.ome.tif" %(params.dir, slidePos)
+    else:
+        img_path_reg = "%s/A%s_F*.ome.tiff" %(params.dir, slidePos)
     img_paths = glob(img_path_reg)
     assert len(img_paths) >= 1
 
@@ -116,26 +119,29 @@ def process_one_slide(row, params):
 
     all_sections = []
     for img_p in img_paths:
-        # print(img_p)
         row_section = row.copy()
-        row_section["OMERO_DATASET"] = generate_omero_dataset(row, img_p)
+        if params.redo_rendering_only:
+            save_yaml(generate_yaml(img_p, row_section), params.dir + "/" + Path(img_p).name)
+        else:
+            # print(img_p)
+            row_section["OMERO_DATASET"] = generate_omero_dataset(row, img_p)
 
-        new_name_list = [row_section.SlideID,
-                row_section.OMERO_DATASET,
-                "Meas" + str(row_section.Measurement),
-                Path(img_p).name]
-        row_section["filename"] = "_".join(new_name_list).replace("tiff", "tif")
+            new_name_list = [row_section.SlideID,
+                    row_section.OMERO_DATASET,
+                    "Meas" + str(row_section.Measurement),
+                    Path(img_p).name]
+            row_section["filename"] = "_".join(new_name_list).replace("tiff", "tif")
 
-        save_yaml(generate_yaml(img_p, row_section), params.dir + "/" + row_section["filename"])
+            save_yaml(generate_yaml(img_p, row_section), params.dir + "/" + row_section["filename"])
 
-        renamed_p = "/".join([str(Path(img_p).parent), row_section.filename])
-        img = imread(img_p)
-        row_section["original_file_path"] = img_p
-        row_section["renamed_file_path"] = renamed_p
-        row_section["Stitched_Size(Gb)"] = img.nbytes / 1e9
-        row_section["Stitched_axis_0"] = img.shape[-2]
-        row_section["Stitched_axis_1"] = img.shape[-1]
-        all_sections.append(row_section)
+            renamed_p = "/".join([str(Path(img_p).parent), row_section.filename])
+            img = imread(img_p)
+            row_section["original_file_path"] = img_p
+            row_section["renamed_file_path"] = renamed_p
+            row_section["Stitched_Size(Gb)"] = img.nbytes / 1e9
+            row_section["Stitched_axis_0"] = img.shape[-2]
+            row_section["Stitched_axis_1"] = img.shape[-1]
+            all_sections.append(row_section)
 
     return pd.DataFrame(all_sections)
 
@@ -144,7 +150,7 @@ def main(args):
     log = pd.read_csv(args.log_tsv, sep="\t")
     all_sections = []
     for i in range(log.shape[0]):
-        all_sections.append(process_one_slide(log.iloc[i] ,args))
+        all_sections.append(process_one_slide(log.iloc[i], args))
     pd.concat(all_sections).to_csv(
             "%s.tsv" %args.dir, sep="\t", index=False)
 
@@ -160,6 +166,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-server", type=str)
     parser.add_argument("-mount_point", type=str)
+    parser.add_argument("-redo_rendering_only", type=str)
 
     args = parser.parse_args()
 
