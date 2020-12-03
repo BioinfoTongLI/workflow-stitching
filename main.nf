@@ -11,7 +11,6 @@ params.server = "imaging.internal.sanger.ac.uk"
 params.z_mode = 'none'
 params.stamp = ''
 params.gap = 4000
-params.redo_rendering_only = false
 
 
 process xlsx_to_tsv {
@@ -90,7 +89,7 @@ process post_process {
 
     script:
     """
-    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_tsv $tsv -server ${params.server} -mount_point ${params.mount_point} -redo_rendering_only ${params.redo_rendering_only}
+    python ${workflow.projectDir}/post_process.py -dir $meas_folder -log_tsv $tsv -server ${params.server} -mount_point ${params.mount_point}
     """
 }
 
@@ -100,8 +99,6 @@ process rename {
     publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"
     conda workflow.projectDir + '/conda_env.yaml'
 
-    when:
-    !params.redo_rendering_only
 
     input:
     path tsvs from updated_log.collect{it}
@@ -124,8 +121,6 @@ process combine {
     conda workflow.projectDir + '/conda_env.yaml'
     publishDir params.mount_point +"0Misc/stitching_merged_log", mode:"copy"
 
-    when:
-    !params.redo_rendering_only
 
     input:
     path log_p from tsv_for_import
