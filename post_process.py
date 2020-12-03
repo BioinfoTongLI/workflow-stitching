@@ -56,18 +56,17 @@ def generate_yaml(img_path, meas):
         current_setting["active"] = True
         current_setting["color"] = default_colors[i]
         current_setting["label"] = ch_names[i]
-        current_setting["end"] = 1000
-        current_setting["start"] = 100
-
-        # try:
-            # plane = img[ind].compute()
-            # plane = plane[plane != 0]
-            # win_start, win_end = np.percentile(plane, [1, 99])
-            # print(win_start, win_end)
-            # current_setting["end"] = int(win_end)
-            # current_setting["start"] = int(win_start)
-        # except:
-            # print("Dask image loading error, using default channel contrast setting")
+        current_setting["end"] = 0
+        try:
+            plane = img[ind].compute()
+            plane = plane[plane != 0]
+            win_start, win_end = np.percentile(plane, [1, 99])
+            print(win_start, win_end)
+            current_setting["end"] = int(win_end)
+            current_setting["start"] = int(win_start)
+        except:
+            current_setting["start"] = 500
+            print("Dask image loading error, using default channel contrast setting")
 
         yaml_content[ch_flag][i + 1] = current_setting
     return yaml_content
