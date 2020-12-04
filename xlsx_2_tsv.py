@@ -46,7 +46,6 @@ def main(args):
     if "gap" not in df.columns:
         df["gap"] = args.gap
     df.groupby("measurement_name").apply(save_sub_df)
-    # df.to_csv(Path(args.xlsx).stem + ".tsv", index=False, sep="\t")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
