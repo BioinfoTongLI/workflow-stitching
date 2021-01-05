@@ -55,7 +55,7 @@ tsvs_for_stitching
 process stitch {
     echo true
     storeDir params.out_dir +"/" + params.proj_code
-    container 'acapella-tong:1.1.7'
+    container 'acapella-tong:1.1.8'
     containerOptions '--volume ' + params.mount_point + ':/data_in/:ro'
 
     memory '35 GB'
