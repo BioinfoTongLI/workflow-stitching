@@ -11,6 +11,8 @@ params.server = "imaging.internal.sanger.ac.uk"
 params.z_mode = 'none' // or max
 params.stamp = ''
 params.gap = 4000
+/*params.fields = '200:300'*/
+params.fields = 'ALL'
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -70,7 +72,7 @@ process stitch {
     script:
     base = file(meas).getName()
     """
-    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/Images/Index.idx.xml" -s OutputDir="./${base}_${z_mode}" -s ZProjection="${z_mode}" -s OutputFormat=tiff -s Silent=false -s Channels="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
+    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/Images/Index.idx.xml" -s OutputDir="./${base}_${z_mode}" -s ZProjection="${z_mode}" -s OutputFormat=tiff -s Silent=false -s Wells="ALL" -s Fields="${params.fields}" -s Channels="ALL" -s Planes="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
     """
 }
 
@@ -82,8 +84,8 @@ process post_process {
     echo true
     conda baseDir + '/conda_env.yaml'
     errorStrategy "retry"
-    storeDir params.mount_point + '0Misc/stitching_single_tsvs'
-    /*publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"*/
+    /*storeDir params.mount_point + '0Misc/stitching_single_tsvs'*/
+    publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"
 
     maxRetries 5
 
