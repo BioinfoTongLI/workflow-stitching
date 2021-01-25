@@ -87,10 +87,6 @@ process post_process {
     /*storeDir params.mount_point + '0Misc/stitching_single_tsvs'*/
     publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"
 
-    maxRetries 5
-
-    memory '45 GB'
-
     input:
     tuple val(meas), path(meas_folder), path(tsv) from stitched_meas_for_log.join(tsvs_with_names)
 
