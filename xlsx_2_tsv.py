@@ -30,7 +30,7 @@ def main(args):
             tmp_id = row.Automated_PlateID.strip()
         else:
             tmp_id = row.SlideID.strip()
-        meas_path = "".join([args.root, row.Export_location.replace("\\", "/"), "/",
+        meas_path = "".join([args.root, row.Export_location.replace("\\", "/"), args.export_loc_suffix + "/",
             str(tmp_id),
             "*Measurement ",
             str(row.Measurement), "/"])
@@ -60,6 +60,7 @@ if __name__ == "__main__":
             required=True)
     parser.add_argument("-zmode", type=str,
             required=True)
+    parser.add_argument("-export_loc_suffix", type=str, default="")
 
     args = parser.parse_args()
 

@@ -11,13 +11,13 @@
 #Z_MODE='none'
 Z_MODE='max'
 GAP='4000'
-PROJ_CODE='KR_C19'
+PROJ_CODE='RV_GON'
 SERVER="imaging.internal.sanger.ac.uk" #Sanger internal server
 #SERVER="omero.sanger.ac.uk" #Sanger external server
 
 MOUNT_POINT='/nfs/team283_imaging/'
 ARCHIV_LOCATION=$MOUNT_POINT'0Misc/'
-LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/KR_C19_exported_20201028_latest.xlsx'
+LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/2021.02.04 RV_GON Phenix log RNAscope 4plex pb8,9.xlsx'
 
 DATE_WITH_TIME=`date "+%Y%m%d%H%M"`
 TRACE_FILE="$ARCHIV_LOCATION/stitching_trace/${PROJ_CODE}_trace_${DATE_WITH_TIME}.tsv"
@@ -35,4 +35,5 @@ NXF_OPTS='-Dleveldb.mmap=false' NXF_WORK=$TMP_NF_WORK LSB_DEFAULTGROUP='team283'
 	--gap $GAP \
 	--trace_file $TRACE_FILE \
 	-resume
+	#--on_corrected '_corrected' \
 	#-profile 'lsf' \

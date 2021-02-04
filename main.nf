@@ -11,8 +11,8 @@ params.server = "imaging.internal.sanger.ac.uk"
 params.z_mode = 'none' // or max
 params.stamp = ''
 params.gap = 4000
-/*params.fields = '200:300'*/
 params.fields = 'ALL'
+params.on_corrected = ""
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -28,7 +28,7 @@ process xlsx_to_tsv {
 
     script:
     """
-    python ${baseDir}/xlsx_2_tsv.py -xlsx "$params.log" -root $params.mount_point -gap ${params.gap} -zmode ${params.z_mode}
+    python ${baseDir}/xlsx_2_tsv.py -xlsx "$params.log" -root $params.mount_point -gap ${params.gap} -zmode ${params.z_mode} -export_loc_suffix "${params.on_corrected}"
     """
 }
 
