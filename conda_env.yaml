@@ -4,7 +4,8 @@ channels:
   - defaults
 dependencies:
   - dask-image
-  - xlrd<=2.0.0
+  #- xlrd<=2.0.0
+  - openpyxl
   - tifffile
   - pip
   - pandas
