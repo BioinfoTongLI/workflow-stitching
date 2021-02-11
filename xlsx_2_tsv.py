@@ -22,7 +22,7 @@ def save_sub_df(sub):
 
 
 def main(args):
-    df = pd.read_excel(args.xlsx)
+    df = pd.read_excel(args.xlsx, dtype={"Measurement": str})
     df = df.dropna(how="all", axis=0)
     for ind in df.index:
         row = df.loc[ind]
@@ -33,7 +33,7 @@ def main(args):
         meas_path = "".join([args.root, row.Export_location.replace("\\", "/"), args.export_loc_suffix + "/",
             str(tmp_id),
             "*Measurement ",
-            str(row.Measurement), "/"])
+            row.Measurement, "/"])
         full_p = glob(meas_path + args.PE_index_file_anchor)
         print(meas_path, full_p)
         # each line of the log file should corresponds to one sinlge measurement in export folder

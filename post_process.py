@@ -80,7 +80,7 @@ def save_yaml(yaml_content, path):
 
 def generate_omero_dataset(serie, p):
     if str(serie.SectionN) != "1":
-        current_section = re.search(".*/A.*_F(\d)T.*.tiff", p).group(1)
+        current_section = re.search(".*/.*_F(\d)T.*.tiff", p).group(1)
     else:
         current_section = "1"
 
@@ -94,7 +94,8 @@ def generate_omero_dataset(serie, p):
 def process_one_slide(row, params):
 
     slidePos = int(float(row.SlideN)) if not np.isnan(row.SlideN) else "*"
-    img_path_reg = "%s/A%s_F*.ome.tiff" %(params.dir, slidePos)
+    # img_path_reg = "%s/A%s_F*.ome.tiff" %(params.dir, slidePos)
+    img_path_reg = "%s/*.ome.tiff" %(params.dir)
     img_paths = glob(img_path_reg)
     assert len(img_paths) >= 1
 
@@ -122,7 +123,7 @@ def process_one_slide(row, params):
 
         new_name_list = [row_section.SlideID,
                 row_section.OMERO_DATASET,
-                "Meas" + str(row_section.Measurement),
+                "Meas" + row_section.Measurement,
                 Path(img_p).name]
         row_section["filename"] = "_".join(new_name_list).replace("tiff", "tif")
 
@@ -141,7 +142,7 @@ def process_one_slide(row, params):
 
 
 def main(args):
-    log = pd.read_csv(args.log_tsv, sep="\t")
+    log = pd.read_csv(args.log_tsv, sep="\t", dtype={"Measurement":str})
     all_sections = []
     for i in range(log.shape[0]):
         all_sections.append(process_one_slide(log.iloc[i] ,args))
