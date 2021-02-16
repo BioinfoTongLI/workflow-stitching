@@ -12,7 +12,7 @@ params.z_mode = 'none' // or max
 params.stamp = ''
 params.gap = 4000
 params.fields = 'ALL'
-params.on_corrected = ""
+params.on_corrected = "_corrected"
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -56,7 +56,7 @@ tsvs_for_stitching
 */
 process stitch {
     echo true
-    storeDir params.out_dir +"/" + params.proj_code
+    storeDir params.out_dir +"/" + params.proj_code + params.on_corrected
     container 'acapella-tong:1.1.8'
     containerOptions '--volume ' + params.mount_point + ':/data_in/:ro'
 
@@ -115,7 +115,7 @@ process rename {
     path "${params.proj_code}*${params.stamp}.tsv" into tsv_for_import
 
     """
-    python ${baseDir}/rename.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point}
+    python ${baseDir}/rename.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point} -corrected ${params.on_corrected}
     """
 }
 

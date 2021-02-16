@@ -93,7 +93,7 @@ def generate_omero_dataset(serie, p):
 
 def process_one_slide(row, params):
 
-    slidePos = int(float(row.SlideN)) if not np.isnan(row.SlideN) else "*"
+    # slidePos = int(float(row.SlideN)) if not np.isnan(row.SlideN) else "*"
     # img_path_reg = "%s/A%s_F*.ome.tiff" %(params.dir, slidePos)
     img_path_reg = "%s/*.ome.tiff" %(params.dir)
     img_paths = glob(img_path_reg)
@@ -121,7 +121,8 @@ def process_one_slide(row, params):
         row_section = row.copy()
         row_section["OMERO_DATASET"] = generate_omero_dataset(row, img_p)
 
-        new_name_list = [row_section.SlideID,
+        file_prefix = row_section.SlideID if row_section.SlideID != "*" else row_section.OMERO_project
+        new_name_list = [file_prefix,
                 row_section.OMERO_DATASET,
                 "Meas" + row_section.Measurement,
                 Path(img_p).name]
