@@ -21,13 +21,14 @@ process xlsx_to_tsv {
     /*echo true*/
     cache "lenient"
     container "/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_processing.sif"
+    containerOptions "-B ${baseDir}:/codes,${params.mount_point}"
 
     output:
     path "*.tsv" into tsvs_for_stitching, tsv_for_post
 
     script:
     """
-    python ${baseDir}/xlsx_2_tsv.py -xlsx "$params.log" -root $params.mount_point -gap ${params.gap} -zmode ${params.z_mode} -export_loc_suffix "${params.on_corrected}"
+    python /codes/xlsx_2_tsv.py -xlsx "$params.log" -root $params.mount_point -gap ${params.gap} -zmode ${params.z_mode} -export_loc_suffix "${params.on_corrected}"
     """
 }
 
@@ -99,9 +100,9 @@ process stitch {
 /*}*/
 
 
-/*/**/
-    /*Rename the files to be biologically meaningful*/
-/**/*/
+/*
+    Rename the files to be biologically-relevant
+*/
 /*process rename {*/
     /*echo true*/
     /*publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"*/
@@ -120,10 +121,10 @@ process stitch {
 /*}*/
 
 
-/*/**/
-    /*[Optional, so errorStrategy = "ignore"]*/
-    /*Append stitching benchmark from nextflow.trace into the tsv log*/
-/**/*/
+/*
+    [Optional, so errorStrategy = "ignore"]
+    Append stitching benchmark from nextflow.trace into the tsv log
+*/
 /*params.trace_file = ''*/
 
 /*trace_file_p = Channel.fromPath(params.trace_file)*/
