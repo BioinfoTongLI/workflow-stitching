@@ -52,8 +52,8 @@ if __name__ == "__main__":
             required=True)
     parser.add_argument("-export_dir", type=str, required=True)
     parser.add_argument("-project_code", type=str, required=True)
-    parser.add_argument("-corrected", type=str, required=True)
     parser.add_argument("-stamp", type=str, required=True)
+    parser.add_argument("-corrected", type=str, default="")
     parser.add_argument("-mount_point", type=str)
 
     args = parser.parse_args()

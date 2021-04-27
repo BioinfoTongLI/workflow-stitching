@@ -12,7 +12,8 @@ params.z_mode = 'none' // or max
 params.stamp = ''
 params.gap = 4000
 params.fields = 'ALL'
-params.on_corrected = "_corrected"
+params.on_corrected = ""
+/*params.on_corrected = "_corrected"*/
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -115,7 +116,8 @@ process rename {
     path "${params.proj_code}*${params.stamp}.tsv" into tsv_for_import
 
     """
-    python ${baseDir}/rename.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point} -corrected ${params.on_corrected}
+    python ${baseDir}/rename.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point}
+    #-corrected ${params.on_corrected}
     """
 }
 
