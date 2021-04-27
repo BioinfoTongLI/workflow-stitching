@@ -22,7 +22,7 @@ import yaml
 
 
 def generate_yaml(img_path, meas):
-    with tf.TiffFile(img_path, 'r') as fh:
+    with tf.TiffFile(img_path) as fh:
         md = omexmlClass.OMEXML(fh.ome_metadata)
 
     pixels = md.image().Pixels
