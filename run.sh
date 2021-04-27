@@ -6,25 +6,22 @@
 # Distributed under terms of the BSD-3 license.
 #
 
-#BSUB -R "span[host=node-11-3-2]"
-
 #Z_MODE='none'
 Z_MODE='max'
 GAP='4000'
-PROJ_CODE='RV_GON'
+PROJ_CODE='TL_SYN'
 SERVER="imaging.internal.sanger.ac.uk" #Sanger internal server
 #SERVER="omero.sanger.ac.uk" #Sanger external server
 
 MOUNT_POINT='/nfs/team283_imaging/'
-ARCHIV_LOCATION=$MOUNT_POINT'0Misc/'
-LOG_FILE=$ARCHIV_LOCATION'stitching_log_files/2021.02.04 RV_GON Phenix log RNAscope 4plex pb8,9.xlsx'
+LOG_FILE=$MOUNT_POINT'0Misc/stitching_log_files/2021.02.17_iNeurons-3.xlsx'
 
 DATE_WITH_TIME=`date "+%Y%m%d%H%M"`
-TRACE_FILE="$ARCHIV_LOCATION/stitching_trace/${PROJ_CODE}_trace_${DATE_WITH_TIME}.tsv"
-TMP_NF_WORK=$HOME'/stitching_work'
+TRACE_FILE="$MOUNT_POINT/0Misc/stitching_trace/${PROJ_CODE}_trace_${DATE_WITH_TIME}.tsv"
+TMP_NF_WORK="$MOUNT_POINT/0Misc/stitching_work"
 
 
-NXF_OPTS='-Dleveldb.mmap=false' NXF_WORK=$TMP_NF_WORK LSB_DEFAULTGROUP='team283' nextflow run main.nf \
+NXF_OPTS='-Dleveldb.mmap=false' NXF_VER="20.10.0" NXF_WORK=$TMP_NF_WORK LSB_DEFAULTGROUP='team283' nextflow -trace nextflow.executor run /lustre/scratch117/cellgen/team283/tl10/acapella-stitching/main.nf \
 	-with-trace $TRACE_FILE \
 	--proj_code $PROJ_CODE \
 	--stamp $DATE_WITH_TIME \
@@ -34,6 +31,6 @@ NXF_OPTS='-Dleveldb.mmap=false' NXF_WORK=$TMP_NF_WORK LSB_DEFAULTGROUP='team283'
 	--z_mode $Z_MODE \
 	--gap $GAP \
 	--trace_file $TRACE_FILE \
-	-resume
+	-profile standard,singularity
+	#-resume
 	#--on_corrected '_corrected' \
-	#-profile 'lsf' \
