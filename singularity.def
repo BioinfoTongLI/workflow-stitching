@@ -1,0 +1,13 @@
+BootStrap: docker
+From: continuumio/miniconda3:4.9.2
+
+%post
+    apt-get -y update
+    apt-get install procps -y
+    conda update --all -y
+    conda install pandas numpy
+    #pip install aicsimageio==3.3.4 scikit-image>=0.18
+
+%labels
+    Author BioinfoTongLI
+    Version v0.0.1

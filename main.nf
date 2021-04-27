@@ -4,16 +4,14 @@ params.mount_point = "/nfs/team283_imaging/"
 params.log = params.mount_point + '0Misc/stitching_log_files/KR_C19_exported_20201028.xlsx'
 params.proj_code = "KR_C19"
 
-params.out_dir = params.mount_point + "0HarmonyStitched/"
-params.server = "imaging.internal.sanger.ac.uk"
-/*params.server = "omero.sanger.ac.uk"*/
+params.out_dir = params.mount_point + "0HarmonyStitched/" // default location, don't change
+params.server = "omero.sanger.ac.uk" // or "imaging.internal.sanger.ac.uk" deprecated
 
 params.z_mode = 'none' // or max
-params.stamp = ''
-params.gap = 4000
-params.fields = 'ALL'
-params.on_corrected = ""
-/*params.on_corrected = "_corrected"*/
+params.stamp = '' // time stamp of execution
+params.gap = 4000 // maximum distance between tiles
+params.fields = 'ALL' // selection of field of views
+params.on_corrected = "" // or "_corrected" for flat-field corrected tiles
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -22,7 +20,7 @@ params.on_corrected = ""
 process xlsx_to_tsv {
     /*echo true*/
     cache "lenient"
-    conda baseDir + '/conda_env.yaml'
+    container "/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_processing.sif"
 
     output:
     path "*.tsv" into tsvs_for_stitching, tsv_for_post
@@ -58,8 +56,8 @@ tsvs_for_stitching
 process stitch {
     echo true
     storeDir params.out_dir +"/" + params.proj_code + params.on_corrected
-    container 'acapella-tong:1.1.8'
-    containerOptions '--volume ' + params.mount_point + ':/data_in/:ro'
+    container '/lustre/scratch117/cellgen/team283/tl10/sifs/acapella-1.1.8.sif'
+    containerOptions '-B ' + params.mount_point + ':/data_in/'
 
     memory '35 GB'
 
@@ -81,71 +79,71 @@ process stitch {
 /*
     Generate rendering.yaml for each image and update the tsv for OMERO import
 */
-process post_process {
-    echo true
-    conda baseDir + '/conda_env.yaml'
-    errorStrategy "retry"
-    /*storeDir params.mount_point + '0Misc/stitching_single_tsvs'*/
-    publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"
+/*process post_process {*/
+    /*echo true*/
+    /*conda baseDir + '/conda_env.yaml'*/
+    /*errorStrategy "retry"*/
+    /*[>storeDir params.mount_point + '0Misc/stitching_single_tsvs'<]*/
+    /*publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"*/
 
-    input:
-    tuple val(meas), path(meas_folder), path(tsv) from stitched_meas_for_log.join(tsvs_with_names)
+    /*input:*/
+    /*tuple val(meas), path(meas_folder), path(tsv) from stitched_meas_for_log.join(tsvs_with_names)*/
 
-    output:
-    path "${meas_folder}.tsv" into updated_log
+    /*output:*/
+    /*path "${meas_folder}.tsv" into updated_log*/
 
-    script:
-    """
-    python ${baseDir}/post_process.py -dir $meas_folder -log_tsv $tsv -server ${params.server} -mount_point ${params.mount_point}
-    """
-}
-
-
-/*
-    Rename the files to be biologically meaningful
-*/
-process rename {
-    echo true
-    publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"
-    conda baseDir + '/conda_env.yaml'
-
-    input:
-    path tsvs from updated_log.collect{it}
-
-    output:
-    path "${params.proj_code}*${params.stamp}.tsv" into tsv_for_import
-
-    """
-    python ${baseDir}/rename.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point}
-    #-corrected ${params.on_corrected}
-    """
-}
+    /*script:*/
+    /*"""*/
+    /*python ${baseDir}/post_process.py -dir $meas_folder -log_tsv $tsv -server ${params.server} -mount_point ${params.mount_point}*/
+    /*"""*/
+/*}*/
 
 
-/*
-    [Optional, so errorStrategy = "ignore"]
-    Append stitching benchmark from nextflow.trace into the tsv log
-*/
-params.trace_file = ''
+/*/**/
+    /*Rename the files to be biologically meaningful*/
+/**/*/
+/*process rename {*/
+    /*echo true*/
+    /*publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"*/
+    /*conda baseDir + '/conda_env.yaml'*/
 
-trace_file_p = Channel.fromPath(params.trace_file)
+    /*input:*/
+    /*path tsvs from updated_log.collect{it}*/
 
-process combine {
-    echo true
-    errorStrategy "ignore"
-    conda baseDir + '/conda_env.yaml'
-    publishDir params.mount_point +"0Misc/stitching_merged_log", mode:"copy"
+    /*output:*/
+    /*path "${params.proj_code}*${params.stamp}.tsv" into tsv_for_import*/
 
-    input:
-    path log_p from tsv_for_import
-    path trace from trace_file_p
+    /*"""*/
+    /*python ${baseDir}/rename.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point}*/
+    /*#-corrected ${params.on_corrected}*/
+    /*"""*/
+/*}*/
 
-    output:
-    path "${params.proj_code}_merge_${params.stamp}.tsv"
 
-    script:
-    """
-    python ${baseDir}/log_trace_combine.py -log $log_p -trace ${trace} -out_stem ${params.proj_code}_merge_${params.stamp}
-    """
-}
+/*/**/
+    /*[Optional, so errorStrategy = "ignore"]*/
+    /*Append stitching benchmark from nextflow.trace into the tsv log*/
+/**/*/
+/*params.trace_file = ''*/
+
+/*trace_file_p = Channel.fromPath(params.trace_file)*/
+
+/*process combine {*/
+    /*echo true*/
+    /*errorStrategy "ignore"*/
+    /*conda baseDir + '/conda_env.yaml'*/
+    /*publishDir params.mount_point +"0Misc/stitching_merged_log", mode:"copy"*/
+
+    /*input:*/
+    /*path log_p from tsv_for_import*/
+    /*path trace from trace_file_p*/
+
+    /*output:*/
+    /*path "${params.proj_code}_merge_${params.stamp}.tsv"*/
+
+    /*script:*/
+    /*"""*/
+    /*python ${baseDir}/log_trace_combine.py -log $log_p -trace ${trace} -out_stem ${params.proj_code}_merge_${params.stamp}*/
+    /*"""*/
+/*}*/
 
