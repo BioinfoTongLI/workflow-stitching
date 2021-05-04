@@ -5,8 +5,8 @@ From: continuumio/miniconda3:4.9.2
     apt-get -y update
     apt-get install procps -y
     conda update --all -y
-    conda install pandas numpy openpyxl
-    #pip install aicsimageio==3.3.4 scikit-image>=0.18
+    conda install pandas numpy openpyxl dask-image
+    pip install aicsimageio==3.3.4 scikit-image>=0.18 apeer-ometiff-library
 
 %labels
     Author BioinfoTongLI

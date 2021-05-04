@@ -80,45 +80,46 @@ process stitch {
 /*
     Generate rendering.yaml for each image and update the tsv for OMERO import
 */
-/*process post_process {*/
-    /*echo true*/
-    /*conda baseDir + '/conda_env.yaml'*/
-    /*errorStrategy "retry"*/
-    /*[>storeDir params.mount_point + '0Misc/stitching_single_tsvs'<]*/
-    /*publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"*/
+process post_process {
+    echo true
+    errorStrategy "retry"
+    container "/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_processing.sif"
+    containerOptions "-B ${baseDir}:/codes,${params.mount_point}"
+    publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"
 
-    /*input:*/
-    /*tuple val(meas), path(meas_folder), path(tsv) from stitched_meas_for_log.join(tsvs_with_names)*/
+    input:
+    tuple val(meas), path(meas_folder), path(tsv) from stitched_meas_for_log.join(tsvs_with_names)
 
-    /*output:*/
-    /*path "${meas_folder}.tsv" into updated_log*/
+    output:
+    path "${meas_folder}.tsv" into updated_log
 
-    /*script:*/
-    /*"""*/
-    /*python ${baseDir}/post_process.py -dir $meas_folder -log_tsv $tsv -server ${params.server} -mount_point ${params.mount_point}*/
-    /*"""*/
-/*}*/
+    script:
+    """
+    python /codes/post_process.py -dir $meas_folder -log_tsv $tsv -server ${params.server} -mount_point ${params.mount_point}
+    """
+}
 
 
 /*
     Rename the files to be biologically-relevant
 */
-/*process rename {*/
-    /*echo true*/
-    /*publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"*/
-    /*conda baseDir + '/conda_env.yaml'*/
+process rename {
+    echo true
+    container "/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_processing.sif"
+    containerOptions "-B ${baseDir}:/codes,${params.mount_point}"
+    publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"
 
-    /*input:*/
-    /*path tsvs from updated_log.collect{it}*/
+    input:
+    path tsvs from updated_log.collect{it}
 
-    /*output:*/
-    /*path "${params.proj_code}*${params.stamp}.tsv" into tsv_for_import*/
+    output:
+    path "${params.proj_code}*${params.stamp}.tsv" into tsv_for_import
 
-    /*"""*/
-    /*python ${baseDir}/rename.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point}*/
-    /*#-corrected ${params.on_corrected}*/
-    /*"""*/
-/*}*/
+    """
+    python /codes/rename.py -tsvs $tsvs -export_dir "${params.out_dir}" -project_code "${params.proj_code}" -stamp ${params.stamp} -mount_point ${params.mount_point}
+    #-corrected ${params.on_corrected}
+    """
+}
 
 
 /*
