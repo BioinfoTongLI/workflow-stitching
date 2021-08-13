@@ -6,15 +6,14 @@
 # Distributed under terms of the BSD-3 license.
 #
 
-#Z_MODE='none'
-Z_MODE='max'
 GAP='4000'
-PROJ_CODE='TL_SYN'
-SERVER="imaging.internal.sanger.ac.uk" #Sanger internal server
-#SERVER="omero.sanger.ac.uk" #Sanger external server
+PROJ_CODE=$1
+TSV_NAME=$2
+Z_MODE=$3 # none or max
+SERVER=$4 # imaging.internal.sanger.ac.uk OR omero.sanger.ac.uk
 
 MOUNT_POINT='/nfs/team283_imaging/'
-LOG_FILE=$MOUNT_POINT'0Misc/stitching_log_files/2021.02.17_iNeurons-3.xlsx'
+LOG_FILE=$MOUNT_POINT'0Misc/stitching_log_files/'$2
 
 DATE_WITH_TIME=`date "+%Y%m%d%H%M"`
 TRACE_FILE="$MOUNT_POINT/0Misc/stitching_trace/${PROJ_CODE}_trace_${DATE_WITH_TIME}.tsv"
@@ -31,6 +30,12 @@ NXF_OPTS='-Dleveldb.mmap=false' NXF_VER="20.10.0" NXF_WORK=$TMP_NF_WORK LSB_DEFA
 	--z_mode $Z_MODE \
 	--gap $GAP \
 	--trace_file $TRACE_FILE \
-	-profile standard,singularity
-	#-resume
+	-profile standard,singularity \
+	-resume
 	#--on_corrected '_corrected' \
+
+if [[ -n $5 ]]; then
+	/nfs/team283/imaging_pipeline/pipeline-import.git/run.sh ${IMPORT_FILE} ${PROJ_CODE} $5
+else
+	echo "No server specified, skipping upload"
+fi
