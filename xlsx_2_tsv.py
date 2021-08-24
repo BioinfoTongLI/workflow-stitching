@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("-root", type=str,
             required=True)
     parser.add_argument("-PE_index_file_anchor", type=str,
-            required=False, default="Images/Index.idx.xml")
+            required=False, default="Images/Index.xml")
     parser.add_argument("-gap", type=str,
             required=True)
     parser.add_argument("-zmode", type=str,

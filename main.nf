@@ -12,6 +12,7 @@ params.stamp = '' // time stamp of execution
 params.gap = 4000 // maximum distance between tiles
 params.fields = 'ALL' // selection of field of views
 params.on_corrected = "" // or "_corrected" for flat-field corrected tiles
+params.index_file = "Images/Index.xml"
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -28,7 +29,7 @@ process xlsx_to_tsv {
 
     script:
     """
-    python /codes/xlsx_2_tsv.py -xlsx "$params.log" -root $params.mount_point -gap ${params.gap} -zmode ${params.z_mode} -export_loc_suffix "${params.on_corrected}"
+    python /codes/xlsx_2_tsv.py -xlsx "$params.log" -root $params.mount_point -gap ${params.gap} -zmode ${params.z_mode} -export_loc_suffix "${params.on_corrected}" -PE_index_file_anchor ${params.index_file}
     """
 }
 
@@ -72,7 +73,7 @@ process stitch {
     script:
     base = file(meas).getName()
     """
-    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/Images/Index.idx.xml" -s OutputDir="./${base}_${z_mode}" -s ZProjection="${z_mode}" -s OutputFormat=tiff -s Silent=false -s Wells="ALL" -s Fields="${params.fields}" -s Channels="ALL" -s Planes="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
+    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/${params.index_file}" -s OutputDir="./${base}_${z_mode}" -s ZProjection="${z_mode}" -s OutputFormat=tiff -s Silent=false -s Wells="ALL" -s Fields="${params.fields}" -s Channels="ALL" -s Planes="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
     """
 }
 
