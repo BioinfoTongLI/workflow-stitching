@@ -122,10 +122,15 @@ def process_one_slide(row, params):
         row_section["OMERO_DATASET"] = generate_omero_dataset(row, img_p)
 
         file_prefix = row_section.SlideID if row_section.SlideID != "*" else row_section.OMERO_project
+        ori_fn = Path(img_p).name
+        m = re.search("(\w)(\d+)_F.*T.*.tiff", ori_fn)
+        row_index = m.group(1)
+        col_index = m.group(2)
+        zfilled_filename = ori_fn.replace(row_index+col_index, row_index + col_index.zfill(2))
         new_name_list = [file_prefix,
                 row_section.OMERO_DATASET,
                 "Meas" + row_section.Measurement,
-                Path(img_p).name]
+                zfilled_filename]
         row_section["filename"] = "_".join(new_name_list).replace("tiff", "tif")
 
         save_yaml(generate_yaml(img_p, row_section), params.dir + "/" + row_section["filename"])
