@@ -12,6 +12,7 @@ params.stamp = '' // time stamp of execution
 params.gap = 4000 // maximum distance between tiles
 params.fields = 'ALL' // selection of field of views
 params.on_corrected = "" // or "_corrected" for flat-field corrected tiles
+/*params.index_file = "Images/Index.idx.xml"*/
 params.index_file = "Images/Index.xml"
 
 /*
