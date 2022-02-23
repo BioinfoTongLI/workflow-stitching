@@ -23,8 +23,7 @@ params.index_file = "Images/Index.xml"
 process xlsx_to_tsv {
     /*echo true*/
     cache "lenient"
-    container "/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_processing.sif"
-    containerOptions "-B ${baseDir}:/codes,${params.mount_point}"
+    conda baseDir + '/conda_env.yaml'
 
     input:
     file log_file
@@ -103,8 +102,7 @@ process post_process {
 */
 process rename {
     echo true
-    container "/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_processing.sif"
-    containerOptions "-B ${baseDir}:/codes,${params.mount_point}"
+    conda baseDir + '/conda_env.yaml'
     publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"
 
     input:
