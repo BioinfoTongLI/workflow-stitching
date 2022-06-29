@@ -60,20 +60,3 @@ def main(xlsx, root, PE_index_file_anchor, gap, zmode, export_loc_suffix):
 
 if __name__ == "__main__":
     fire.Fire(main)
-    # parser = argparse.ArgumentParser()
-
-    # parser.add_argument("-xlsx", type=str,
-    # required=True)
-    # parser.add_argument("-root", type=str,
-    # required=True)
-    # parser.add_argument("-PE_index_file_anchor", type=str,
-    # required=False, default="Images/Index.idx.xml")
-    # parser.add_argument("-gap", type=str,
-    # required=True)
-    # parser.add_argument("-zmode", type=str,
-    # required=True)
-    # parser.add_argument("-export_loc_suffix", type=str, default="")
-
-    # args = parser.parse_args()
-
-    # main(args)
