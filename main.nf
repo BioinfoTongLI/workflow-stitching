@@ -17,6 +17,7 @@ params.on_corrected = "" // "" or "_corrected" for flat-field corrected tiles
 params.index_file = "Images/Index.xml"
 
 container_path = "gitlab-registry.internal.sanger.ac.uk/tl10/acapella-stitching:latest"
+sif_folder = "/lustre/scratch117/cellgen/team283/imaging_sifs/"
 debug = true
 params.is_slide = true
 
@@ -28,9 +29,12 @@ process xlsx_to_tsv {
     debug debug
 
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        '/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_process.sif':
+        sif_folder + '/stitching_process.sif':
         container_path}"
-    containerOptions "${workflow.containerEngine == 'singularity' ? '-B ':'-v '}" + params.mount_point
+
+    containerOptions "${workflow.containerEngine == 'singularity' ?
+        '-B ' + params.mount_point + ':' + params.mount_point + ':ro' :
+        '-v ' + params.mount_point + ':' + params.mount_point + ':ro'}"
 
     input:
     file log_file
@@ -58,7 +62,7 @@ process stitch {
     debug debug
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        '/lustre/scratch117/cellgen/team283/tl10/sifs/acapella-1.1.8.sif':
+        sif_folder + '/acapella-1.1.8.sif':
         'acapella-in-docker'}"
     containerOptions "-B ${params.mount_point}:/data_in/:ro,/tmp/:/tmp/acapella/:rw"
     storeDir params.out_dir + "/" + params.proj_code + params.on_corrected
@@ -89,9 +93,12 @@ process post_process {
     debug debug
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        '/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_process.sif':
+        sif_folder + '/stitching_process.sif':
         container_path}"
-    containerOptions "-B ${params.mount_point}"
+    containerOptions "${workflow.containerEngine == 'singularity' ?
+        '-B ' + params.mount_point + ':' + params.mount_point + ':ro' :
+        '-v ' + params.mount_point + ':' + params.mount_point + ':ro'}"
+
     errorStrategy "retry"
 
     storeDir params.mount_point + '0Misc/stitching_single_tsvs'
@@ -119,9 +126,12 @@ process rename {
     debug debug
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        '/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_process.sif':
+        sif_folder + '/stitching_process.sif':
         container_path}"
-    containerOptions "-B ${params.mount_point}"
+    containerOptions "${workflow.containerEngine == 'singularity' ?
+        '-B ' + params.mount_point + ':' + params.mount_point + ':rw' :
+        '-v ' + params.mount_point + ':' + params.mount_point + ':rw'}"
+
     publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"
 
     input:
@@ -146,7 +156,7 @@ process Generate_companion_ome {
     debug debug
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        '/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_process.sif':
+        sif_folder + '/stitching_process.sif':
         container_path}"
     containerOptions "-B ${params.mount_point}"
     /*publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"*/
@@ -192,7 +202,9 @@ process Generate_companion_ome {
 /*}*/
 
 workflow {
-    xlsx_to_tsv(channel.fromPath(params.log, checkIfExists: true), params.mount_point, params.gap, params.z_mode, params.on_corrected, params.index_file)
+    xlsx_to_tsv(channel.fromPath(params.log, checkIfExists: true),
+        params.mount_point, params.gap, params.z_mode,
+        params.on_corrected, params.index_file)
     /*
         Put parameter channel for stitching
     */
