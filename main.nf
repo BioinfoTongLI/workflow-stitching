@@ -18,7 +18,7 @@ params.index_file = "Images/Index.xml"
 
 container_path = "gitlab-registry.internal.sanger.ac.uk/tl10/acapella-stitching:latest"
 debug = true
-is_slide = false
+params.is_slide = true
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -27,10 +27,10 @@ is_slide = false
 process xlsx_to_tsv {
     debug debug
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         '/lustre/scratch117/cellgen/team283/tl10/sifs/stitching_process.sif':
         container_path}"
-    containerOptions "-B ${params.mount_point}"
+    containerOptions "${workflow.containerEngine == 'singularity' ? '-B ':'-v '}" + params.mount_point
 
     input:
     file log_file
@@ -45,7 +45,7 @@ process xlsx_to_tsv {
 
     script:
     """
-    xlsx_2_tsv.py --xlsx "${log_file}" --root ${mount_point} --gap ${gap} --zmode ${z_mode} --export_loc_suffix "${on_corrected}" --PE_index_file_anchor ${PE_index_file_anchor}
+    xlsx_2_tsv.py --xlsx ${log_file} --root ${mount_point} --gap ${gap} --zmode ${z_mode} --export_loc_suffix "${on_corrected}" --PE_index_file_anchor ${PE_index_file_anchor}
     """
 }
 
@@ -212,7 +212,7 @@ workflow {
 
     stitch(stitching_features, params.fields, params.index_file)
     post_process(stitch.out.join(tsvs_with_names), params.server, params.mount_point)
-    if (is_slide) {
+    if (params.is_slide) {
         rename(post_process.out.collect(),
             params.out_dir, params.proj_code, params.stamp,
             params.mount_point, params.on_corrected)
