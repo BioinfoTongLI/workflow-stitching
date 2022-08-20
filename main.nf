@@ -19,7 +19,8 @@ params.index_file = "Images/Index.xml"
 container_path = "gitlab-registry.internal.sanger.ac.uk/tl10/acapella-stitching:latest"
 sif_folder = "/lustre/scratch117/cellgen/team283/imaging_sifs/"
 debug = true
-params.is_slide = true
+params.is_slide = false
+params.hcs_zarr = "/lustre/scratch117/cellgen/team283/HCS_zarrs"
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -33,8 +34,8 @@ process xlsx_to_tsv {
         container_path}"
 
     containerOptions "${workflow.containerEngine == 'singularity' ?
-        '-B ' + params.mount_point + ':' + params.mount_point + ':ro' :
-        '-v ' + params.mount_point + ':' + params.mount_point + ':ro'}"
+        '-B ' + params.mount_point + ':' + params.mount_point :
+        '-v ' + params.mount_point + ':' + params.mount_point}"
 
     input:
     file log_file
@@ -164,8 +165,8 @@ process Generate_companion_ome {
     input:
     tuple val(base), path(meas_folder)
 
-    /*output:*/
-    /*path "*.companion.ome"*/
+    output:
+    tuple val(base), path("${meas_folder}/*.companion.ome"), path("${meas_folder}/*.ome.tiff")
 
     script:
     """
@@ -174,6 +175,28 @@ process Generate_companion_ome {
     """
 }
 
+
+process bf2raw {
+    tag "${companion}"
+    debug debug
+
+    /*container "openmicroscopy/bioformats2raw:0.4.0"*/
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/bf2raw-ome.sif':
+        'openmicroscopy/bioformats2raw:0.4.0'}"
+    storeDir params.hcs_zarr
+
+    input:
+    tuple val(stem), path(companion), path(tifs)
+
+    output:
+    tuple val(stem), path("${stem}.zarr")
+
+    script:
+    """
+    /opt/bioformats2raw/bin/bioformats2raw --no-hcs ./${companion} "${stem}.zarr"
+    """
+}
 /*
     [Optional, so errorStrategy = "ignore"]
     Append stitching benchmark from nextflow.trace into the tsv log
@@ -230,5 +253,6 @@ workflow {
             params.mount_point, params.on_corrected)
     } else {
         Generate_companion_ome(stitch.out)
+        bf2raw(Generate_companion_ome.out)
     }
 }
