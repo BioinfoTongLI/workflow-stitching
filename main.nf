@@ -20,7 +20,7 @@ container_path = "gitlab-registry.internal.sanger.ac.uk/tl10/acapella-stitching:
 sif_folder = "/lustre/scratch117/cellgen/team283/imaging_sifs/"
 debug = true
 params.is_slide = false
-params.hcs_zarr = "/lustre/scratch117/cellgen/team283/HCS_zarrs"
+params.hcs_zarr = params.out_dir + "/HCS_zarrs"
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -97,8 +97,8 @@ process post_process {
         sif_folder + '/stitching_process.sif':
         container_path}"
     containerOptions "${workflow.containerEngine == 'singularity' ?
-        '-B ' + params.mount_point + ':' + params.mount_point + ':ro' :
-        '-v ' + params.mount_point + ':' + params.mount_point + ':ro'}"
+        '-B ' + params.mount_point + ':' + params.mount_point :
+        '-v ' + params.mount_point + ':' + params.mount_point}"
 
     errorStrategy "retry"
 
@@ -180,10 +180,9 @@ process bf2raw {
     tag "${companion}"
     debug debug
 
-    /*container "openmicroscopy/bioformats2raw:0.4.0"*/
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        sif_folder + '/bf2raw-ome.sif':
-        'openmicroscopy/bioformats2raw:0.4.0'}"
+        sif_folder + '/bf2raw-0.5.0rc1.sif':
+        'openmicroscopy/bioformats2raw:0.5.0rc1'}"
     storeDir params.hcs_zarr
 
     input:
@@ -194,7 +193,8 @@ process bf2raw {
 
     script:
     """
-    /opt/bioformats2raw/bin/bioformats2raw --no-hcs ./${companion} "${stem}.zarr"
+    /usr/local/bin/_entrypoint.sh bioformats2raw ./${companion} "${stem}.zarr"
+    #/opt/bioformats2raw/bin/bioformats2raw ./${companion} "${stem}.zarr"
     """
 }
 /*
@@ -246,8 +246,8 @@ workflow {
     /*stitching_features.view()*/
 
     stitch(stitching_features, params.fields, params.index_file)
-    post_process(stitch.out.join(tsvs_with_names), params.server, params.mount_point)
     if (params.is_slide) {
+        post_process(stitch.out.join(tsvs_with_names), params.server, params.mount_point)
         rename(post_process.out.collect(),
             params.out_dir, params.proj_code, params.stamp,
             params.mount_point, params.on_corrected)
