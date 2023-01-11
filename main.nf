@@ -5,6 +5,8 @@ nextflow.enable.dsl=2
 params.mount_point = "/nfs/team283_imaging/"
 params.log = params.mount_point + '0Misc/stitching_log_files/2022.05.04_iNeurons.xlsx'
 params.proj_code = "TL_SYN"
+params.from = 0
+params.to = -1
 
 params.out_dir = params.mount_point + "0HarmonyStitched/" // default location, don't change
 params.server = "omero.sanger.ac.uk" // or "imaging.internal.sanger.ac.uk" deprecated
@@ -21,6 +23,12 @@ sif_folder = "/lustre/scratch117/cellgen/team283/imaging_sifs/"
 debug = true
 params.is_slide = false
 params.hcs_zarr = params.out_dir + "/HCS_zarrs"
+
+params.do_ashlar_stitching = false
+params.reference_ch = 0
+params.max_shift = 100
+
+zarr_dir = "/nfs/team283_imaging/0HarmonyZarr/"
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -51,6 +59,97 @@ process xlsx_to_tsv {
     script:
     """
     xlsx_2_tsv.py --xlsx ${log_file} --root ${mount_point} --gap ${gap} --zmode ${z_mode} --export_loc_suffix "${on_corrected}" --PE_index_file_anchor ${PE_index_file_anchor}
+    """
+}
+
+
+process PE_index_to_OME_index {
+    debug debug
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'your.sif' :
+        container_path }"
+
+    containerOptions "${workflow.containerEngine == 'singularity' ?
+        '-B ' + params.mount_point + ':/data_in/:ro' :
+        '-v ' + params.mount_point + ':/data_in/:ro'}"
+
+    /*storeDir "./test_ashlar"*/
+
+    input:
+    tuple val(meas_folder), val(max_proj), val(gap)
+    val index_file
+
+    output:
+    path ("*.index.xml"), emit: ome_index
+
+    script:
+    """
+    index_file_cropping.py --index_file "/data_in/${meas_folder}/${index_file}"
+    """
+}
+
+
+process PE_to_ome_zarr {
+    debug debug
+
+    label "default"
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/bf2raw-0.5.0rc1.sif':
+        'quay.io/bioinfotongli/bioformats2raw:0.5.0rc1'}"
+
+    /*containerOptions "${workflow.containerEngine == 'singularity' ?*/
+        /*'-B ' + params.mount_point + ':/data_in/:ro' :*/
+        /*'-v ' + params.mount_point + ':/data_in/:ro'}"*/
+
+    storeDir zarr_dir
+
+    input:
+    tuple val(ind), path(mea_folder)
+    val(ome_index)
+    val(camera_dim)
+
+    output:
+    tuple val(stem), val(ind), path("${stem}.zarr")
+
+    script:
+    stem = file(mea_folder).baseName
+    """
+    /usr/local/bin/_entrypoint.sh bioformats2raw -w ${camera_dim} -h ${camera_dim} $mea_folder/${ome_index} "${stem}.zarr"
+    """
+}
+
+
+process MIP_zarr_to_tiled_tiff {
+    debug debug
+
+    /*label "default"*/
+    cpus 20
+    memory 120.Gb
+    queue 'imaging'
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/ashlar_preprocess.sif':
+        'ashlar_preprocess:latest'}"
+    clusterOptions "-m 'node-11-3-3'"
+
+    storeDir params.out_dir + "/${params.proj_code}"
+
+    input:
+    tuple val(stem), val(ind), path(ome_zarr)
+    tuple val(from), val(to)
+
+    output:
+    tuple val(stem), val(ind), path(out_file_name), emit: tif
+    tuple val(stem), val(ind), path(xml_name), emit: xml
+
+    script:
+    out_file_name = "${stem}_${from}_${to}.ome.tif"
+    xml_name = "${stem}.xml"
+    """
+    mip_zarr_to_tiled_tiff.py -zarr_in ${ome_zarr} -out_tif "${out_file_name}" -select_range [${from},${to}]
+    cp ${ome_zarr}/OME/METADATA.ome.xml "$xml_name"
     """
 }
 
@@ -197,6 +296,93 @@ process bf2raw {
     #/opt/bioformats2raw/bin/bioformats2raw ./${companion} "${stem}.zarr"
     """
 }
+
+
+process ashlar_single_stitch {
+    debug debug
+
+    cpus 2
+    memory 15.Gb
+    queue 'imaging'
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/ashlar.sif':
+        "ashlar:latest" }"
+
+    storeDir params.out_dir + "/${params.proj_code}"
+
+    input:
+    tuple val(stem), val(ind), path(ome_tifs)
+    val(ref_ch)
+    val(max_shift)
+
+    output:
+    tuple val(stem), val(ind), path(out_name), emit: stitched_tif
+
+    script:
+    out_name = "${stem}_stitched_ref_ch_${ref_ch}_max_shift_${max_shift}.ome.tif"
+    """
+    ashlar -c ${ref_ch} $ome_tifs -m ${max_shift} -o "${out_name}"
+    """
+}
+
+process ashlar_stitch_register {
+    debug debug
+
+    cpus 2
+    memory 15.Gb
+    queue 'imaging'
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/ashlar.sif':
+        "ashlar:latest" }"
+
+    storeDir params.out_dir + "/${params.proj_code}"
+
+    input:
+    path(ome_tifs)
+    val(ref_ch)
+    val(max_shift)
+
+    output:
+    path(out_name)
+
+    script:
+    out_name = "stitched_ref_ch_${ref_ch}_max_shift_${max_shift}.ome.tif"
+    """
+    ashlar -c ${ref_ch} $ome_tifs -m ${max_shift} -o ${out_name}
+    """
+}
+
+
+process update_channel_names {
+    debug debug
+
+    /*label "default"*/
+    cpus 1
+    memory 30.Gb
+    queue 'imaging'
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/ashlar_preprocess.sif':
+        'ashlar_preprocess:latest'}"
+
+    storeDir params.out_dir + "/${params.proj_code}"
+
+    input:
+    tuple val(stem), val(ind), path(ome_tif), path(ome_xml)
+
+    output:
+    tuple val(stem), val(ind), path(out_file_name), emit: tif
+
+    script:
+    tif_stem = file(ome_tif).baseName
+    out_file_name = "${tif_stem}_with_channel_names.ome.tif"
+    """
+    cp ${ome_tif} "${out_file_name}"
+    update_channel_names.py -in_tif ${ome_tif} -out_tif "${out_file_name}" -xml_name ${ome_xml}
+    """
+}
 /*
     [Optional, so errorStrategy = "ignore"]
     Append stitching benchmark from nextflow.trace into the tsv log
@@ -224,7 +410,7 @@ process bf2raw {
     /*"""*/
 /*}*/
 
-workflow {
+workflow _metadata_parsing {
     xlsx_to_tsv(channel.fromPath(params.log, checkIfExists: true),
         params.mount_point, params.gap, params.z_mode,
         params.on_corrected, params.index_file)
@@ -245,7 +431,12 @@ workflow {
         .map{it -> [it[0], it[1][0], it[2][0]]}
     /*stitching_features.view()*/
 
-    stitch(stitching_features, params.fields, params.index_file)
+    emit:
+    stitching_features
+}
+
+workflow {
+    stitch(_metadata_parsing.out, params.fields, params.index_file)
     if (params.is_slide) {
         post_process(stitch.out.join(tsvs_with_names), params.server, params.mount_point)
         rename(post_process.out.collect(),
@@ -254,5 +445,25 @@ workflow {
     } else {
         Generate_companion_ome(stitch.out)
         bf2raw(Generate_companion_ome.out)
+    }
+}
+
+
+workflow ashlar {
+    /*_metadata_parsing()*/
+    /*_metadata_parsing.out.view()*/
+    meas_in = channel.from(params.meas_dirs)
+    PE_to_ome_zarr(meas_in, params.index_file, 2160)
+    MIP_zarr_to_tiled_tiff(PE_to_ome_zarr.out, [params.from, params.to])
+    ashlar_single_stitch(MIP_zarr_to_tiled_tiff.out.tif, params.reference_ch, params.max_shift)
+    sorted_list = MIP_zarr_to_tiled_tiff.out.tif
+        .toSortedList( { a -> a[1] } )
+        .map { allPairs -> allPairs.collect{ meas, ind, f -> file(f) } }
+        .collect()
+    /*sorted_list.view()*/
+    if (params.do_ashlar_stitching) {
+        ashlar_stitch_register(sorted_list, params.reference_ch, params.max_shift)
+    } else {
+        update_channel_names(ashlar_single_stitch.out.stitched_tif.join(MIP_zarr_to_tiled_tiff.out.xml, by: [0, 1]))
     }
 }
