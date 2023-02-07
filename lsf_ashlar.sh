@@ -20,9 +20,9 @@ TMP_NF_WORK="$MOUNT_POINT/0ashlar_stitching_work"
 IMPORT_FILE="$MOUNT_POINT/0Misc/stitching_tsv_for_import/${PROJ_CODE}_import_${DATE_WITH_TIME}.tsv"
 
 
-NXF_OPTS='-Dleveldb.mmap=false' NXF_WORK=$TMP_NF_WORK LSB_DEFAULTGROUP='team283' /lustre/scratch117/cellgen/team283/tl10/nextflow/nextflow -trace nextflow.executor run /lustre/scratch117/cellgen/team283/tl10/acapella-stitching/main.nf \
+NXF_OPTS='-Dleveldb.mmap=false' NXF_WORK=$TMP_NF_WORK LSB_DEFAULTGROUP='team283' /lustre/scratch126/cellgen/team283/tl10/nextflow/nextflow -trace nextflow.executor run /lustre/scratch126/cellgen/team283/tl10/acapella-stitching/main.nf \
 	-params-file $1 \
-	-entry ashlar \
+	-entry nemo \
 	-profile lsf \
 	-resume
 	#-with-trace $TRACE_FILE \
