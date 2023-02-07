@@ -7,4 +7,4 @@ RUN apt-get update && \
 
 RUN python3 -m pip install --upgrade pip --no-cache-dir
 
-RUN pip3 install fire pysnooper ome-zarr numpy tifffile ome-types lxml
+RUN pip3 install fire pysnooper ome-zarr numpy tifffile ome-types lxml natsort

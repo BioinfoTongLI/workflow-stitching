@@ -1,0 +1,21 @@
+FROM openjdk:slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends procps wget unzip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN wget https://downloads.openmicroscopy.org/bio-formats/6.10.0/artifacts/bftools.zip --no-check-certificate && \
+	unzip bftools.zip -d /opt/ && rm bftools.zip
+
+RUN chmod a+rx /opt/bftools/*
+
+RUN useradd -m bf
+
+USER bf
+RUN echo 'export PATH=/opt/bftools:$PATH' >> /home/bf/.bashrc
+
+ENV HOME /home/bf
+WORKDIR /home/bf
+
+CMD bash
