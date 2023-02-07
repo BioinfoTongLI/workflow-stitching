@@ -17,14 +17,16 @@ import xml.etree.ElementTree as ET
 from glob import glob
 import numpy as np
 import tifffile as tf
+import dask.array as da
 import pysnooper
+import natsort
 
 
 NS = {"ome": "http://www.openmicroscopy.org/Schemas/OME/2016-06"}
 
 
 def convert_SI(val, unit_in, unit_out):
-    SI = {"micron": 0.000001, "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0}
+    SI = {"micron": 0.000001, "µm":0.000001, "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0}
     if val == 0.0:
         return 0
     return val * SI[unit_in] / SI[unit_out]
@@ -83,11 +85,11 @@ def get_position_list(md):
 
 @pysnooper.snoop()
 def write_tiled_tif(imgs, pos_list, out, select_range):
-    n_ch = imgs.shape[0]
     end = len(imgs) if int(select_range[1]) == -1 else int(select_range[1])
     with tf.TiffWriter(out, bigtiff=True) as tif:
         for i in range(int(select_range[0]), int(end)):
             img = imgs[i]
+            n_ch = img.shape[0]
             pos_y, pos_x, pixelsize_x, pixelsize_y, pixelunit_x, pixelunit_y = pos_list[
                 i
             ]
@@ -112,7 +114,7 @@ def load_zarr(zarr_path):
 
 
 @pysnooper.snoop()
-def main(zarr_in, out_tif, select_range):
+def phenix(zarr_in, out_tif, select_range):
     wells = glob(f"{zarr_in}/[A-Z]/[0-9]")
     tree = ET.parse(f"{zarr_in}/OME/METADATA.ome.xml")
     root = tree.getroot()
@@ -129,5 +131,28 @@ def main(zarr_in, out_tif, select_range):
     write_tiled_tif(raveled_mips, pos_list, out_tif, select_range)
 
 
+@pysnooper.snoop()
+def nemo1(zarr_in, out_tif, select_range, correction_matrix=None):
+    tiles = natsort.natsorted(glob(f"{zarr_in}/[!OME]*"))
+    tree = ET.parse(f"{zarr_in}/OME/METADATA.ome.xml")
+    root = tree.getroot()
+
+    pos_list = get_position_list_from_ET(root.findall("ome:Image", NS))
+
+    raveled_mips = []
+    for t in tiles:
+        tile = load_zarr(t)[0]
+        if correction_matrix:
+            # channel abberation correction
+            tile = correct(tile, correction_matrix)
+        mip_img = np.max(tile, axis=2).squeeze()
+        raveled_mips.append(mip_img)
+    raveled_mips = da.array(raveled_mips).compute()
+    write_tiled_tif(raveled_mips, pos_list, out_tif, select_range)
+
+
 if __name__ == "__main__":
-    fire.Fire(main)
+    fire.Fire({
+        "nemo1": nemo1,
+        "phenix": phenix,
+    })
