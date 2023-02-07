@@ -19,7 +19,7 @@ params.on_corrected = "" // "" or "_corrected" for flat-field corrected tiles
 params.index_file = "Images/Index.xml"
 
 container_path = "gitlab-registry.internal.sanger.ac.uk/tl10/acapella-stitching:latest"
-sif_folder = "/lustre/scratch117/cellgen/team283/imaging_sifs/"
+sif_folder = "/lustre/scratch126/cellgen/team283/imaging_sifs/"
 debug = true
 params.is_slide = false
 params.hcs_zarr = params.out_dir + "/HCS_zarrs"
@@ -28,7 +28,6 @@ params.do_ashlar_stitching = false
 params.reference_ch = 0
 params.max_shift = 100
 
-zarr_dir = "/nfs/team283_imaging/0HarmonyZarr/"
 
 /*
     Convert the xlsx file to .tsv that is nextflow friendly
@@ -108,13 +107,17 @@ process PE_to_ome_zarr {
     input:
     tuple val(ind), path(mea_folder)
     val(ome_index)
-    val(camera_dim)
+    tuple val(hardware), val(camera_dim)
 
     output:
-    tuple val(stem), val(ind), path("${stem}.zarr")
+    tuple val(stem), val(ind), path("${stem}.zarr"), val(hardware)
 
     script:
-    stem = file(mea_folder).baseName
+    if (hardware == 'nemo'){
+        stem = file(ome_index).baseName
+    } else {
+        stem = file(mea_folder).baseName
+    }
     """
     /usr/local/bin/_entrypoint.sh bioformats2raw -w ${camera_dim} -h ${camera_dim} $mea_folder/${ome_index} "${stem}.zarr"
     """
@@ -137,7 +140,7 @@ process MIP_zarr_to_tiled_tiff {
     storeDir params.out_dir + "/${params.proj_code}"
 
     input:
-    tuple val(stem), val(ind), path(ome_zarr)
+    tuple val(stem), val(ind), path(ome_zarr), val(hardware)
     tuple val(from), val(to)
 
     output:
@@ -148,7 +151,7 @@ process MIP_zarr_to_tiled_tiff {
     out_file_name = "${stem}_${from}_${to}.ome.tif"
     xml_name = "${stem}.xml"
     """
-    mip_zarr_to_tiled_tiff.py -zarr_in ${ome_zarr} -out_tif "${out_file_name}" -select_range [${from},${to}]
+    mip_zarr_to_tiled_tiff.py ${hardware} -zarr_in ${ome_zarr} -out_tif "${out_file_name}" -select_range [${from},${to}]
     cp ${ome_zarr}/OME/METADATA.ome.xml "$xml_name"
     """
 }
@@ -448,13 +451,12 @@ workflow {
     }
 }
 
+workflow _mip_and_stitch {
+    take:
+    ome_zarr
 
-workflow ashlar {
-    /*_metadata_parsing()*/
-    /*_metadata_parsing.out.view()*/
-    meas_in = channel.from(params.meas_dirs)
-    PE_to_ome_zarr(meas_in, params.index_file, 2160)
-    MIP_zarr_to_tiled_tiff(PE_to_ome_zarr.out, [params.from, params.to])
+    main:
+    MIP_zarr_to_tiled_tiff(ome_zarr, [params.from, params.to])
     ashlar_single_stitch(MIP_zarr_to_tiled_tiff.out.tif, params.reference_ch, params.max_shift)
     sorted_list = MIP_zarr_to_tiled_tiff.out.tif
         .toSortedList( { a -> a[1] } )
@@ -466,4 +468,28 @@ workflow ashlar {
     } else {
         update_channel_names(ashlar_single_stitch.out.stitched_tif.join(MIP_zarr_to_tiled_tiff.out.xml, by: [0, 1]))
     }
+}
+
+
+zarr_dir = "/nfs/team283_imaging/0HarmonyZarr/"
+/*zarr_dir = "/nfs/team283_imaging/playground_Tong/temp_nemo1_convert/"*/
+
+workflow ashlar {
+    /*_metadata_parsing()*/
+    /*_metadata_parsing.out.view()*/
+    params.meas_dirs = [["/nfs/team283_imaging/0HarmonyExports/LY_BRC/LY_BRC_AT0002__2022-10-07T17_43_01-Measurement 17/"]]
+    hardware = "phenix"
+    image_size = 2160
+    PE_to_ome_zarr(channel.from(params.meas_dirs), params.index_file, [hardware, image_size])
+    _mip_and_stitch(PE_to_ome_zarr.out)
+}
+
+workflow nemo {
+    params.master_ome_tiff = [
+        [0, "/nfs/team283_imaging/Nemo_data/FLNG-3/2021_12_14/MALAT1_1/"],
+    ]
+    hardware = "nemo1"
+    image_size = 1950
+    PE_to_ome_zarr(channel.from(params.master_ome_tiff), 'MALAT1_1_MMStack_Test_2-Grid_0_10.ome.tif', [hardware, image_size])
+    _mip_and_stitch(PE_to_ome_zarr.out)
 }
