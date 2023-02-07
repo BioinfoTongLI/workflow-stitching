@@ -21,7 +21,7 @@ NS = {"ome": "http://www.openmicroscopy.org/Schemas/OME/2016-06"}
 
 @pysnooper.snoop()
 def main(in_tif, out_tif, xml_name):
-    ome = from_xml(xml_name, parser='lxml')
+    ome = from_xml(xml_name, parser="lxml")
     channel_names = [ch.name for ch in ome.images[0].pixels.channels]
     ori_ome = from_tiff(in_tif)
     for i, ch in enumerate(ori_ome.images[0].pixels.channels):
@@ -31,17 +31,18 @@ def main(in_tif, out_tif, xml_name):
     # first_chs = []
     # ome.images = [ome.images[0]]
     # for plane in ome.images[0].pixels.planes:
-        # if plane.the_z == 0 and plane.the_t == 0:
-            # first_chs.append(plane)
+    # if plane.the_z == 0 and plane.the_t == 0:
+    # first_chs.append(plane)
     # ome.images[0].pixels.size_z = 1
     # ome.images[0].pixels.planes = first_chs
 
     # with tf.TiffFile(in_tif) as fh:
-        # Y, X = fh.pages[0].shape
-        # arr = fh.asarray()
+    # Y, X = fh.pages[0].shape
+    # arr = fh.asarray()
     # ome.images[0].pixels.size_y = Y
     # ome.images[0].pixels.size_x = X
     # tf.imwrite(out_tif, arr, description=to_xml(ome).encode())
+
 
 if __name__ == "__main__":
     fire.Fire(main)

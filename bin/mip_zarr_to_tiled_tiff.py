@@ -26,7 +26,14 @@ NS = {"ome": "http://www.openmicroscopy.org/Schemas/OME/2016-06"}
 
 
 def convert_SI(val, unit_in, unit_out):
-    SI = {"micron": 0.000001, "µm":0.000001, "mm": 0.001, "cm": 0.01, "m": 1.0, "km": 1000.0}
+    SI = {
+        "micron": 0.000001,
+        "µm": 0.000001,
+        "mm": 0.001,
+        "cm": 0.01,
+        "m": 1.0,
+        "km": 1000.0,
+    }
     if val == 0.0:
         return 0
     return val * SI[unit_in] / SI[unit_out]
@@ -83,6 +90,7 @@ def get_position_list(md):
     #         print(f"{posY_pix} um, {posX_pix} um")
     return pos_list
 
+
 @pysnooper.snoop()
 def write_tiled_tif(imgs, pos_list, out, select_range):
     end = len(imgs) if int(select_range[1]) == -1 else int(select_range[1])
@@ -94,15 +102,15 @@ def write_tiled_tif(imgs, pos_list, out, select_range):
                 i
             ]
             metadata = {
-                'Pixels': {
-                    'PhysicalSizeX': pixelsize_x,
-                    'PhysicalSizeXUnit': pixelunit_x,
-                    'PhysicalSizeY': pixelsize_y,
-                    'PhysicalSizeYUnit': pixelunit_y,
+                "Pixels": {
+                    "PhysicalSizeX": pixelsize_x,
+                    "PhysicalSizeXUnit": pixelunit_x,
+                    "PhysicalSizeY": pixelsize_y,
+                    "PhysicalSizeYUnit": pixelunit_y,
                 },
-                'Plane': {
-                    'PositionX': [pos_x * pixelsize_x] * n_ch,
-                    'PositionY': [pos_y * pixelsize_y] * n_ch,
+                "Plane": {
+                    "PositionX": [pos_x * pixelsize_x] * n_ch,
+                    "PositionY": [pos_y * pixelsize_y] * n_ch,
                 },
             }
             tif.write(img.astype(np.uint16), metadata=metadata)
@@ -126,7 +134,7 @@ def phenix(zarr_in, out_tif, select_range):
         .map_blocks(lambda block: np.max(block, axis=2).squeeze(), dtype=z[0].dtype)
         .compute()
     )
-    raveled_mips = mip_img.reshape(-1, *mip_img.shape[-3:])[:len(pos_list)]
+    raveled_mips = mip_img.reshape(-1, *mip_img.shape[-3:])[: len(pos_list)]
 
     write_tiled_tif(raveled_mips, pos_list, out_tif, select_range)
 
@@ -152,7 +160,9 @@ def nemo1(zarr_in, out_tif, select_range, correction_matrix=None):
 
 
 if __name__ == "__main__":
-    fire.Fire({
-        "nemo1": nemo1,
-        "phenix": phenix,
-    })
+    fire.Fire(
+        {
+            "nemo1": nemo1,
+            "phenix": phenix,
+        }
+    )
