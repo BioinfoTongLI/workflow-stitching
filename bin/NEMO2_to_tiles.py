@@ -12,7 +12,10 @@ from ome_types import from_xml, to_xml, from_tiff
 import tifffile
 import fire
 from natsort import natsorted
+import warnings
 
+
+warnings.filterwarnings("ignore")
 
 def get_registration_matrixlist(FolderRegPC1, FolderRegPC2, ChConfig):
     #set up registration matrices - expected only one tif file in each reg folder!!
@@ -53,6 +56,18 @@ def get_registration_matrixlist(FolderRegPC1, FolderRegPC2, ChConfig):
     return TransfMatrList
 
 
+def GetZProjTileCam2(TiffSeries, NZplanes, NCh, nTile):
+    FrameStart = NZplanes*NCh*nTile
+    #here TCZYX order is assumed 
+    SizeImg = TiffSeries[0].asarray().shape
+    ii=0; img = np.zeros((NCh, NZplanes, SizeImg[0], SizeImg[1]))
+    for chn in range(NCh):
+         for zpl in range(NZplanes):
+             img[chn, zpl, :, :] = TiffSeries[FrameStart+ii].asarray()
+             ii+=1
+    img_zproj = np.max(img, axis = 1)
+    return img_zproj
+
 def metadata_values(json_data, XML_data):
     poslist = []
     namelist = []
@@ -78,7 +93,7 @@ def write_tileconfig(poslist, exportdir):
 def get_pixel_attrib(file_path):
     with TiffFile(file_path) as fh:
         ome_md = fh.ome_metadata
-    print(file_path)
+    
     root = ET.fromstring(ome_md)
     NS = {"ome": "http://www.openmicroscopy.org/Schemas/OME/2016-06"}
     for md in root.findall("ome:Image", NS):
@@ -97,6 +112,15 @@ def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, 
     filelist2 = natsorted(filelist2)
 
     
+    with TiffFile(filelist2[0]) as tif2:
+        Ser_cam2 = tif2.series[0]
+        shp = list(tifffile.TiffFile(filelist2[0]).series[0].shape)
+        Ntiles_cam2 = shp[0]
+        NCh_cam2 = shp[1]
+        NZpl_cam2 = shp[2]
+
+    
+    
     with TiffFile(FolderPC1File) as tif:
         imagej_metadata = tif.imagej_metadata
         metadata_info = imagej_metadata["Info"]
@@ -104,39 +128,19 @@ def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, 
         root = ET.fromstring(tif.pages[0].tags[270].value) #why 270???
         pixelsize, poslist, namelist, channels = metadata_values(info, root)
 
-        nt = 0
-        NPC2 = 0
-        findex = 0
+        
+
+        ntile =0 
         #go thourgh each tile, register and save it
         for tile in tif.series:
-            print(nt)
+            
             pc1_volume = tile.asarray()
             pc1_axes = tile.axes
             pc1_projax = pc1_axes.find("Z")
             pc1_zproj = np.max(pc1_volume, axis=pc1_projax)
 
-
-            #read one tif file from PC2 - it contains Nt number of tiles
-            #if the previously opened PC2 tif file has no more tiles left
-            if nt == 0:
-                with TiffFile(filelist2[NPC2]) as tif2:
-                    pc2_volume = tif2.asarray()
-                    pc2axes = tif2.series[0].axes
-                    pc2_projax = pc2axes.find("Z")
-                    pc2_timeax = pc2axes.find("T")
-                    if pc2_timeax > pc2_projax:
-                        pc2_timeax = pc2_timeax - 1 # as z axes will be removed
-                    pc2_zproj = np.max(pc2_volume, axis=pc2_projax)
-                    NPC2 = NPC2 + 1 # count number for PC2 tif file
-
-            #extract one timepoint=one tile from PC2 tif file
-            pc2_zproj_tile = np.take(pc2_zproj, nt, axis = pc2_timeax)
-            nt = nt+1
-
-            #check and if needed restart reading tif files from PC2 on the next tile iteration
-            if nt > pc2_zproj.shape[0]:
-                nt = 0
-
+            #get zprojected tile from camrera 2
+            pc2_zproj_tile = GetZProjTileCam2(Ser_cam2, NZpl_cam2, NCh_cam2, ntile)
             #go through all channels and register them (except ref channel)
             nch = 0
             NewTile =  np.zeros([len(ChConfig), np.shape(pc1_zproj)[-2], np.shape(pc1_zproj)[-1]], dtype=pc1_zproj.dtype)
@@ -157,9 +161,8 @@ def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, 
                     nch = nch + 1
 
 
-            outname = "Tile{:04d}.tif".format(findex)
+            outname = "Tile{:04d}.tif".format(ntile)
             outfile = join(OutDir, outname)
-            findex = findex + 1
 
             metadata = {
                         'axes': 'CYX',
@@ -170,12 +173,12 @@ def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, 
                         'PhysicalSizeYUnit': 'µm',
                         }
 
-            print('Writing tile ' + str(findex), end="\r")
+            print('Writing tile ' + str(ntile), end="\r")
             imwrite(outfile, NewTile, imagej=True,
                     resolution=(1./float(pixelsize[0]), 1./float(pixelsize[1])), 
                     metadata = metadata, ome = True)
+            ntile+=1
     tif.close()
-    del pc2_volume, pc1_volume
     print('Tile saving is done!')
     write_tileconfig(poslist, OutDir)  
         
