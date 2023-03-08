@@ -70,7 +70,7 @@ def PrepImgArray(folder_input, NamePrefix, CreateSumChan, DAPIch):
         #create sum of all spot channels if asked
         if CreateSumChan:
             NoDapiImg = img.copy()
-            np.delete(NoDapiImg, DAPIch, axis = 0)
+            NoDapiImg = np.delete(NoDapiImg, DAPIch, axis = 0)
             SumImgChan = np.max(NoDapiImg, axis = 0)
             NewImage = np.zeros((img.shape[0]+1, img.shape[1], img.shape[2]))
             NewImage[:img.shape[0],:,:]=img
