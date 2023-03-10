@@ -22,16 +22,26 @@ def GenPosList(TileConfFile, FolderWithTiles):
     filelist = glob(join(FolderWithTiles, "*.tif"))
     file_path = filelist[0] #take any tile image
     NS = {"ome": "http://www.openmicroscopy.org/Schemas/OME/2016-06"}
-    print(file_path)
     with TiffFile(file_path) as fh:
+        #metadata = fh.image_description
+        tags = fh.pages[0].tags
         ome_md = fh.ome_metadata
-    root = ET.fromstring(ome_md)
-    for md in root.findall("ome:Image", NS):
-        pixels = md.find("ome:Pixels", NS)
-        pixelsize_x = float(pixels.attrib["PhysicalSizeX"])
-        pixelsize_y = float(pixels.attrib["PhysicalSizeY"])
-        pixelunit_x = pixels.attrib["PhysicalSizeXUnit"]
-        pixelunit_y = pixels.attrib["PhysicalSizeYUnit"]
+        md = fh.imagej_metadata
+    if ome_md:
+        root = ET.fromstring(ome_md)
+        for md in root.findall("ome:Image", NS):
+            pixels = md.find("ome:Pixels", NS)
+            pixelsize_x = float(pixels.attrib["PhysicalSizeX"])
+            pixelsize_y = float(pixels.attrib["PhysicalSizeY"])
+            pixelunit_x = pixels.attrib["PhysicalSizeXUnit"]
+            pixelunit_y = pixels.attrib["PhysicalSizeYUnit"]
+    else:
+        Xres = tags['XResolution'].value
+        Yres = tags['YResolution'].value
+        pixelsize_x = float(Xres[1]/Xres[0])
+        pixelsize_y = float(Yres[1]/Yres[0])
+        pixelunit_x = 'µm'
+        pixelunit_y = 'µm' 
     
     AllPos = pd.read_table(TileConfFile, sep=';', header=None, usecols=[0,2], skiprows=1, index_col=0).squeeze()
     positions = []
@@ -43,7 +53,7 @@ def GenPosList(TileConfFile, FolderWithTiles):
         positions.append(pos)
     return positions
 
-def PrepImgArray(folder_input, NamePrefix):
+def PrepImgArray(folder_input, NamePrefix, CreateSumChan, DAPIch):
     imgs = []
     ListOfTifs = glob(folder_input + '/*.tif')
     ID_list = range(len(ListOfTifs))
@@ -56,7 +66,18 @@ def PrepImgArray(folder_input, NamePrefix):
 
         #read image and metadata
         img, imagej_metadata = OpenTiff(FullPathImage[0])
-        imgs.append(img)
+        
+        #create sum of all spot channels if asked
+        if CreateSumChan:
+            NoDapiImg = img.copy()
+            NoDapiImg = np.delete(NoDapiImg, DAPIch, axis = 0)
+            SumImgChan = np.max(NoDapiImg, axis = 0)
+            NewImage = np.zeros((img.shape[0]+1, img.shape[1], img.shape[2]))
+            NewImage[:img.shape[0],:,:]=img
+            NewImage[img.shape[0],:,:] = SumImgChan
+        else:
+            NewImage = img
+        imgs.append(NewImage.astype(np.uint16))
     return imgs
 
 
@@ -83,12 +104,12 @@ def write_tiled_tifs_ZProj(imgs, positions, out):
             
             
 
-def main(input_folder, file_out, name_tile_pos = 'TileConfiguration.txt'):
+def main(input_folder, file_out, name_tile_pos = 'TileConfiguration.txt', CreateSumChan = True, DAPIch = 0):
     # usually first ome.tiff contains all metadata regarding tiles positions
     Prefix = 'Tile'
     file_tile_pos = input_folder + '/' + name_tile_pos
     Positions = GenPosList(file_tile_pos, input_folder)
-    Images = PrepImgArray(input_folder, Prefix)
+    Images = PrepImgArray(input_folder, Prefix, CreateSumChan, DAPIch)
     write_tiled_tifs_ZProj(Images, Positions, file_out)
     
     
