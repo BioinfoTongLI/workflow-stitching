@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 from tifffile import TiffFile, TiffWriter, imwrite
 from glob import glob
 from os.path import split, join, isdir, isfile
@@ -14,15 +15,17 @@ import fire
 from natsort import natsorted
 
 
-def get_registration_matrixlist(FolderRegPC1, FolderRegPC2, ChConfig):
+def get_registration_matrixlist(beadstack1, beadstack2, ChConfig):
     # set up registration matrices - expected only one tif file in each reg folder!!
-    regfile1_path = glob(join(FolderRegPC1, "*.tif"))
-    with TiffFile(regfile1_path[0]) as tif1:
+    # regfile1_path = glob(join(FolderRegPC1, "*.tif"))
+    # with TiffFile(regfile1_path[0]) as tif1:
+    with TiffFile(beadstack1) as tif1:
         volume1 = tif1.asarray()
         axes1 = tif1.series[0].axes
 
-    regfile2_path = glob(join(FolderRegPC2, "*.tif"))
-    with TiffFile(regfile2_path[0]) as tif2:
+    # regfile2_path = glob(join(FolderRegPC2, "*.tif"))
+    # with TiffFile(regfile2_path[0]) as tif2:
+    with TiffFile(beadstack2) as tif2:
         volume2 = tif2.asarray()
         axes2 = tif2.series[0].axes
 
@@ -196,11 +199,11 @@ def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, 
     write_tileconfig(poslist, OutDir)
 
 
-def main(FolderPC1File, FolderPC2, FolderRegPC1, FolderRegPC2, ConfigFile, OutDir):
+def main(FolderPC1File, FolderPC2, beadstack1, beadstack2, ConfigFile, OutDir):
     # FolderPC1FIle - path to the first tif file of Camera 1 with all metadata
     # FolderPC2 - folder to the images from PC2
     ChConfig = pd.read_csv(ConfigFile, sep="\t")
-    TransfMat = get_registration_matrixlist(FolderRegPC1, FolderRegPC2, ChConfig)
+    TransfMat = get_registration_matrixlist(beadstack1, beadstack2, ChConfig)
     register_and_save_tiles(FolderPC1File, FolderPC2, TransfMat, ChConfig, OutDir)
 
 

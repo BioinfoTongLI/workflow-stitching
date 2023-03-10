@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 from tifffile import TiffFile
 from os.path import join
 from glob import glob
