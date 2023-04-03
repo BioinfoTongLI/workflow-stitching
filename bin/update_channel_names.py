@@ -21,8 +21,12 @@ NS = {"ome": "http://www.openmicroscopy.org/Schemas/OME/2016-06"}
 
 @pysnooper.snoop()
 def main(in_tif, out_tif, xml_name):
-    ome = from_xml(xml_name, parser="lxml")
-    channel_names = [ch.name for ch in ome.images[0].pixels.channels]
+    if xml_name.endswith("ome.tif"):
+        channel_names=["DAPI", "max_proj", "ch1", "ch2", "ch3", "ch4"]
+        ome = from_tiff(in_tif)
+    else:
+        ome = from_xml(xml_name, arser="lxml")
+        channel_names = [ch.name for ch in ome.images[0].pixels.channels]
     ori_ome = from_tiff(in_tif)
     for i, ch in enumerate(ori_ome.images[0].pixels.channels):
         ch.name = channel_names[i]
