@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 params.mount_point = "/nfs/team283_imaging/"
 params.log = params.mount_point + '0Misc/stitching_log_files/2022.05.04_iNeurons.xlsx'
-params.proj_code = "TL_SYN"
+params.proj_code = "Test_deleteme"
 params.from = 0
 params.to = -1
 
@@ -25,7 +25,7 @@ params.is_slide = false
 params.hcs_zarr = params.out_dir + "/HCS_zarrs"
 
 params.do_ashlar_stitching = false
-params.reference_ch = 0
+params.reference_ch = 1
 params.max_shift = 100
 
 
@@ -113,7 +113,7 @@ process PE_to_ome_zarr {
     tuple val(stem), val(ind), path("${stem}.zarr"), val(hardware)
 
     script:
-    if (hardware == 'nemo'){
+    if (hardware == 'nemo1'){
         stem = file(ome_index).baseName
     } else {
         stem = file(mea_folder).baseName
@@ -325,7 +325,7 @@ process ashlar_single_stitch {
     script:
     out_name = "${stem}_stitched_ref_ch_${ref_ch}_max_shift_${max_shift}.ome.tif"
     """
-    ashlar -c ${ref_ch} $ome_tifs -m ${max_shift} -o "${out_name}"
+    ashlar -c ${ref_ch} $ome_tifs -m ${max_shift} --flip-y -o "${out_name}"
     """
 }
 
@@ -384,6 +384,63 @@ process update_channel_names {
     """
     cp ${ome_tif} "${out_file_name}"
     update_channel_names.py -in_tif ${ome_tif} -out_tif "${out_file_name}" -xml_name ${ome_xml}
+    """
+}
+
+
+process Nemo2_to_tiled_tiff {
+    debug debug
+
+    /*label "default"*/
+    /*cpus 5*/
+    /*memory 300.Gb*/
+    queue 'imaging'
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/nemo2_preprocess.sif':
+        'nemo2_preprocess:latest'}"
+
+    storeDir params.out_dir + "/${params.proj_code}"
+
+    input:
+    tuple val(stem), path(master_tif), path(pc2_folder), path(regpc1), path(regpc2), path(ch_config_file)
+
+    output:
+    tuple val(stem), path("${out_dir_name}"), emit: tif
+
+    script:
+    out_dir_name = "tiff_tiles_${stem}"
+    /*out_file_name = "${tif_stem}_with_channel_names.ome.tif"*/
+    """
+    mkdir ${out_dir_name}
+    NEMO2_to_tiles.py --FolderPC1File ${master_tif} --FolderPC2 ${pc2_folder} --beadstack1 ${regpc1} --beadstack2 ${regpc2} --ConfigFile ${ch_config_file} --OutDir ${out_dir_name}
+    """
+}
+
+
+process zproj_tiled_tiff {
+    debug debug
+
+    /*label "default"*/
+    /*cpus 5*/
+    /*memory 100.Gb*/
+    queue 'imaging'
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/nemo2_preprocess.sif':
+        'nemo2_preprocess:latest'}"
+
+    storeDir params.out_dir + "/${params.proj_code}"
+
+    input:
+    tuple val(stem), path(tiff_folder)
+
+    output:
+    tuple val(stem), val(stem), path("${stem}.ome.tif"), emit: tif
+
+    script:
+    """
+    Tiles_to_ashlar.py --input_folder ${tiff_folder} --file_out ./${stem}.ome.tif
     """
 }
 /*
@@ -492,4 +549,13 @@ workflow nemo {
     image_size = 1950
     PE_to_ome_zarr(channel.from(params.master_ome_tiff), 'MALAT1_1_MMStack_Test_2-Grid_0_10.ome.tif', [hardware, image_size])
     _mip_and_stitch(PE_to_ome_zarr.out)
+}
+
+workflow nemo2 {
+    hardware = "nemo2"
+    /*image_size = 1950*/
+    Nemo2_to_tiled_tiff(channel.from(params.image_config))
+    zproj_tiled_tiff(Nemo2_to_tiled_tiff.out)
+    ashlar_single_stitch(zproj_tiled_tiff.out.tif, params.reference_ch, params.max_shift)
+    update_channel_names(ashlar_single_stitch.out.stitched_tif.join(zproj_tiled_tiff.out.tif, by: [0, 1]))
 }
