@@ -1,0 +1,2 @@
+image_config:
+  - ["cycle7", "/nfs/team283_imaging/Nemo2_data/FLNG_ISS/HST12/Cycle_7/Cam1_1/Cam1_1_MMStack_Cycle_7-Grid_0_6.ome.tif", "/nfs/team283_imaging/Nemo2_data/FLNG_ISS/HST12/Cycle_7/Cam2_1", "/nfs/team283_imaging/Nemo2_data/Registration/2022_07_22/registered/Cam1_1/Cam1_1_MMStack_Pos0.ome.tif", "/nfs/team283_imaging/Nemo2_data/Registration/2022_07_22/registered/Cam2_1/Cam2_1_MMStack_Pos0.ome.tif", "/lustre/scratch126/cellgen/team283/tl10/acapella-stitching/template_config.txt"]
