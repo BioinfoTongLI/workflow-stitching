@@ -9,87 +9,20 @@ params.from = 0
 params.to = -1
 
 params.out_dir = params.mount_point + "0HarmonyStitched/" // default location, don't change
-params.server = "omero.sanger.ac.uk" // or "imaging.internal.sanger.ac.uk" deprecated
-
-params.z_mode = 'max' // none or max
-params.stamp = '' // time stamp of execution
-params.gap = 4000 // maximum distance between tiles
-params.fields = 'ALL' // selection of field of views
-params.on_corrected = "" // "" or "_corrected" for flat-field corrected tiles
-params.index_file = "Images/Index.xml"
 
 container_path = "gitlab-registry.internal.sanger.ac.uk/tl10/acapella-stitching:latest"
 sif_folder = "/lustre/scratch126/cellgen/team283/imaging_sifs/"
 debug = true
-params.is_slide = false
 params.hcs_zarr = params.out_dir + "/HCS_zarrs"
 
 params.do_ashlar_stitching = false
 params.reference_ch = 1
 params.max_shift = 100
 
-
 /*
-    Convert the xlsx file to .tsv that is nextflow friendly
-    some sanity check is also performed here
+    Convert image exported tiles to ome zarr using bioformats2raw
 */
-process xlsx_to_tsv {
-    debug debug
-
-    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        sif_folder + '/stitching_process.sif':
-        container_path}"
-
-    containerOptions "${workflow.containerEngine == 'singularity' ?
-        '-B ' + params.mount_point + ':' + params.mount_point :
-        '-v ' + params.mount_point + ':' + params.mount_point}"
-
-    input:
-    file log_file
-    val mount_point
-    val gap
-    val z_mode
-    val on_corrected
-    val PE_index_file_anchor
-
-    output:
-    file "*.tsv"
-
-    script:
-    """
-    xlsx_2_tsv.py --xlsx ${log_file} --root ${mount_point} --gap ${gap} --zmode ${z_mode} --export_loc_suffix "${on_corrected}" --PE_index_file_anchor ${PE_index_file_anchor}
-    """
-}
-
-
-process PE_index_to_OME_index {
-    debug debug
-
-    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'your.sif' :
-        container_path }"
-
-    containerOptions "${workflow.containerEngine == 'singularity' ?
-        '-B ' + params.mount_point + ':/data_in/:ro' :
-        '-v ' + params.mount_point + ':/data_in/:ro'}"
-
-    /*storeDir "./test_ashlar"*/
-
-    input:
-    tuple val(meas_folder), val(max_proj), val(gap)
-    val index_file
-
-    output:
-    path ("*.index.xml"), emit: ome_index
-
-    script:
-    """
-    index_file_cropping.py --index_file "/data_in/${meas_folder}/${index_file}"
-    """
-}
-
-
-process PE_to_ome_zarr {
+process Tiles_to_ome_zarr {
     debug debug
 
     label "default"
@@ -153,38 +86,6 @@ process MIP_zarr_to_tiled_tiff {
     """
     mip_zarr_to_tiled_tiff.py ${hardware} -zarr_in ${ome_zarr} -out_tif "${out_file_name}" -select_range [${from},${to}]
     cp ${ome_zarr}/OME/METADATA.ome.xml "$xml_name"
-    """
-}
-
-
-/*
-    Acapella stitching
-*/
-process stitch {
-    tag "$meas_folder"
-    debug debug
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        sif_folder + '/acapella-1.1.8.sif':
-        'acapella-in-docker'}"
-    containerOptions "-B ${params.mount_point}:/data_in/:ro,/tmp/:/tmp/acapella/:rw"
-    storeDir params.out_dir + "/" + params.proj_code + params.on_corrected
-
-    memory '60 GB'
-
-    input:
-    tuple val(meas), val(z_mode), val(gap)
-    val fields
-    val index_file
-
-    output:
-    tuple val(base), path(meas_folder)
-
-    script:
-    base = file(meas).getName()
-    meas_folder = "${base}_${z_mode}"
-    """
-    acapella -license /home/acapella/AcapellaLicense.txt -s IndexFile="/data_in/$meas/${index_file}" -s OutputDir="${meas_folder}" -s ZProjection="${z_mode}" -s OutputFormat=tiff -s Silent=false -s Wells="ALL" -s Fields="${fields}" -s Channels="ALL" -s Planes="ALL" -s Gap=${gap} /home/acapella/StitchImage.script
     """
 }
 
@@ -357,7 +258,7 @@ process ashlar_stitch_register {
     """
 }
 
-
+// update the channel names in the OME-TIFF using the channel names in the companion OME-XML or the embedded OME-XML
 process update_channel_names {
     debug debug
 
@@ -373,7 +274,7 @@ process update_channel_names {
     storeDir params.out_dir + "/${params.proj_code}"
 
     input:
-    tuple val(stem), val(ind), path(ome_tif), path(ome_xml)
+    tuple val(stem), val(ind), path(ome_tif), path(ome_xml_or_tif)
 
     output:
     tuple val(stem), val(ind), path(out_file_name), emit: tif
@@ -383,7 +284,7 @@ process update_channel_names {
     out_file_name = "${tif_stem}_with_channel_names.ome.tif"
     """
     cp ${ome_tif} "${out_file_name}"
-    update_channel_names.py -in_tif ${ome_tif} -out_tif "${out_file_name}" -xml_name ${ome_xml}
+    update_channel_names.py -in_tif ${ome_tif} -out_tif "${out_file_name}" -xml_name ${ome_xml_or_tif}
     """
 }
 
@@ -495,18 +396,6 @@ workflow _metadata_parsing {
     stitching_features
 }
 
-workflow {
-    stitch(_metadata_parsing.out, params.fields, params.index_file)
-    if (params.is_slide) {
-        post_process(stitch.out.join(tsvs_with_names), params.server, params.mount_point)
-        rename(post_process.out.collect(),
-            params.out_dir, params.proj_code, params.stamp,
-            params.mount_point, params.on_corrected)
-    } else {
-        Generate_companion_ome(stitch.out)
-        bf2raw(Generate_companion_ome.out)
-    }
-}
 
 workflow _mip_and_stitch {
     take:
@@ -531,26 +420,29 @@ workflow _mip_and_stitch {
 zarr_dir = "/nfs/team283_imaging/0HarmonyZarr/"
 /*zarr_dir = "/nfs/team283_imaging/playground_Tong/temp_nemo1_convert/"*/
 
+// use ashlar to stitch images from PE
 workflow ashlar {
     /*_metadata_parsing()*/
     /*_metadata_parsing.out.view()*/
     params.meas_dirs = [["/nfs/team283_imaging/0HarmonyExports/LY_BRC/LY_BRC_AT0002__2022-10-07T17_43_01-Measurement 17/"]]
     hardware = "phenix"
     image_size = 2160
-    PE_to_ome_zarr(channel.from(params.meas_dirs), params.index_file, [hardware, image_size])
-    _mip_and_stitch(PE_to_ome_zarr.out)
+    Tiles_to_ome_zarr(channel.from(params.meas_dirs), params.index_file, [hardware, image_size])
+    _mip_and_stitch(Tiles_to_ome_zarr.out)
 }
 
+// use ashlar to stitch images from single PC (Nemo1) data
 workflow nemo {
     params.master_ome_tiff = [
         [0, "/nfs/team283_imaging/Nemo_data/FLNG-3/2021_12_14/MALAT1_1/"],
     ]
     hardware = "nemo1"
     image_size = 1950
-    PE_to_ome_zarr(channel.from(params.master_ome_tiff), 'MALAT1_1_MMStack_Test_2-Grid_0_10.ome.tif', [hardware, image_size])
-    _mip_and_stitch(PE_to_ome_zarr.out)
+    Tiles_to_ome_zarr(channel.from(params.master_ome_tiff), 'MALAT1_1_MMStack_Test_2-Grid_0_10.ome.tif', [hardware, image_size])
+    _mip_and_stitch(Tiles_to_ome_zarr.out)
 }
 
+// use ashlar to stitch images from dual PC (Nemo2) data
 workflow nemo2 {
     hardware = "nemo2"
     /*image_size = 1950*/
