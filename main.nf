@@ -19,6 +19,11 @@ params.do_ashlar_stitching = false
 params.reference_ch = 1
 params.max_shift = 100
 
+params.image_config = [
+    [],
+    []
+]
+
 /*
     Convert image exported tiles to ome zarr using bioformats2raw
 */

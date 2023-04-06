@@ -13,6 +13,5 @@ NXF_OPTS='-Dleveldb.mmap=false' NXF_WORK=$TMP_NF_WORK NXF_VER=22.04.5 nextflow -
     	-params-file $1 \
 	-profile local \
 	-entry nemo2 \
-	--outdir './' \
 	-with-report "report.html"
 	#-resume \
