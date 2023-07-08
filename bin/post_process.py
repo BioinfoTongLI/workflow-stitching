@@ -9,15 +9,13 @@
 """
 Rename the images in a PE stiched folder according to the log file
 """
-import fire
+import argparse
 import pandas as pd
 from glob import glob
 import re
 from pathlib import Path
 from dask_image.imread import imread
-
-# from apeer_ometiff_library import omexmlClass
-from ome_types import from_xml
+from apeer_ometiff_library import omexmlClass, io
 import tifffile as tf
 import numpy as np
 import yaml
@@ -25,41 +23,34 @@ import yaml
 
 def generate_yaml(img_path, meas):
     with tf.TiffFile(img_path) as fh:
-        md = from_xml(fh.ome_metadata)
+        md = omexmlClass.OMEXML(fh.ome_metadata)
+
+    pixels = md.image().Pixels
     ch_prob_cols = [ind for ind in meas.index if ind.startswith("Channel")]
     tar_ch_cols = [s.replace("Channel", "Target") for s in ch_prob_cols]
-    ch_maps = {
-        meas[ch_prob]: meas[tar_ch_cols[i]]
-        for i, ch_prob in enumerate(ch_prob_cols)
-        if meas[ch_prob] != "nan"
-    }
+    ch_maps = {meas[ch_prob] : meas[tar_ch_cols[i]]
+            for i, ch_prob in enumerate(ch_prob_cols)
+            if meas[ch_prob] != "nan"}
 
-    ome_ch_names = [ch.name for ch in md.images[0].pixels.channels]
-    ch_names = [
-        str(ch_maps[ch]) if ch in ch_maps else "Background" for ch in ome_ch_names
-    ]
+    ome_ch_names = pixels.get_channel_names()
+    # print(ch_maps)
+    # print(img_path)
+    # print(ome_ch_names)
+    ch_names = [str(ch_maps[ch]) if ch in ch_maps else "Background" for ch in ome_ch_names]
+    # print(ch_names)
 
-    z_ind = int(np.floor(md.images[0].pixels.size_z / 2))
+    z_ind = int(np.floor(pixels.SizeZ/2))
+    # print(pixels.SizeZ, z_ind)
 
     # use default XYZCT
-    dim_order = md.images[0].pixels.dimension_order
+    dim_order = pixels.get_DimensionOrder()
     print(dim_order)
-    target_z_indexes = (
-        np.arange(md.images[0].pixels.size_c) * md.images[0].pixels.size_z + z_ind
-    )
+    target_z_indexes = np.arange(pixels.SizeC) * pixels.SizeZ + z_ind
 
     img = imread(img_path)
     ch_flag = "channels"
-    yaml_content = {ch_flag: {}, "greyscale": False, "version": 2}
-    default_colors = [
-        "56b4E9",
-        "009E73",
-        "F0E442",
-        "0000FF",
-        "CC79A7",
-        "D55E00",
-        "E69f00",
-    ]
+    yaml_content = {ch_flag:{}, "greyscale": False, "version": 2}
+    default_colors = ["56b4E9", "009E73", "F0E442", "0000FF", "CC79A7", "D55E00", "E69f00"]
     for i, ind in enumerate(target_z_indexes):
         current_setting = {}
         current_setting["active"] = True
@@ -69,96 +60,97 @@ def generate_yaml(img_path, meas):
         current_setting["start"] = 100
 
         # try:
-        # plane = img[ind].compute()
-        # plane = plane[plane != 0]
-        # win_start, win_end = np.percentile(plane, [1, 99])
-        # print(win_start, win_end)
-        # current_setting["end"] = int(win_end)
-        # current_setting["start"] = int(win_start)
+            # plane = img[ind].compute()
+            # plane = plane[plane != 0]
+            # win_start, win_end = np.percentile(plane, [1, 99])
+            # print(win_start, win_end)
+            # current_setting["end"] = int(win_end)
+            # current_setting["start"] = int(win_start)
         # except:
-        # print("Dask image loading error, using default channel contrast setting")
+            # print("Dask image loading error, using default channel contrast setting")
 
         yaml_content[ch_flag][i + 1] = current_setting
     return yaml_content
 
 
 def save_yaml(yaml_content, path):
-    with open(r"%s.render.yml" % path, "w") as file:
+    with open(r'%s.render.yml' %path, 'w') as file:
         documents = yaml.dump(yaml_content, file)
 
 
 def generate_omero_dataset(serie, p):
     if str(serie.SectionN) != "1":
-        current_section = re.search(".*/.*_F(\d)T.*.tiff", p).group(1)
+        current_section = re.search(".*/.*_F(\d+)T.*.tiff", p).group(1)
     else:
         current_section = "1"
 
-    SampleID = "-".join(str(serie["Sample_%s" % str(current_section)]).split("-")[:2])
+    SampleID = "-".join(str(serie["Sample_%s" %str(current_section)]).split("-")[:2])
     SampleID_no_slash = SampleID.replace("/", ".")
-    dataset_list = [
-        SampleID_no_slash,
-        serie.Target1,
-        serie.Target2,
-        serie.Target3,
-        serie.Target4,
-        serie.Target5,
-        serie.Target6,
-        serie.Target7,
-    ]
+    dataset_list = [SampleID_no_slash, serie.Target1, serie.Target2, serie.Target3, serie.Target4, serie.Target5, serie.Target6, serie.Target7]
     dataset_list = [str(s) for s in dataset_list]
     return "_".join([s for s in dataset_list if s != "nan"])
 
 
-def process_one_slide(row, dir_in, mount_point, server):
+def process_one_slide(row, params):
 
-    img_path_reg = f"{dir_in}/*.ome.tiff"
+    # slidePos = int(float(row.SlideN)) if not np.isnan(row.SlideN) else "*"
+    # img_path_reg = "%s/A%s_F*.ome.tiff" %(params.dir, slidePos)
+    img_path_reg = "%s/*.ome.tiff" %(params.dir)
+    print(f"Asserting images inside {img_path_reg}")
     img_paths = glob(img_path_reg)
     assert len(img_paths) >= 1
+    
+    # create columns if missing
+    omero_columns = ['omero_group', 'omero_username', 'omero_project', 'omero_dataset']
+    for column in omero_columns:
+      if column not in row:
+        row[column] = ''
 
     try:
-        raw_export = imread(
-            "%s/%s/%s/images/*.tiff"
-            % (
-                mount_point,
-                row.export_location.replace("\\", "/"),
-                dir_in.replace("_max", "").replace("_none", ""),
-            )
-        )
+        raw_export = imread("%s/%s/%s/images/*.tiff" %(
+            params.mount_point, row.export_location.replace("\\", "/"),
+            params.dir.replace("_max", "").replace("_none", "")))
         raw_size = raw_export.nbytes / 1e9
     except:
         # multislide plate, hard to know how large this acquisition is
         raw_size = ""
     row["raw_export_size(gb)"] = raw_size
-    row["OMERO_project"] = row.Tissue_1
-    row["OMERO_internal_group"] = "Team283"
-    row["OMERO_SERVER"] = server
-    row["Meas_folder_with_zmode"] = dir_in
-    if row.OMERO_internal_users == "nan":
-        row["OMERO_internal_users"] = "ob5"
+
+    if pd.isnull(row["omero_group"]) or row["omero_group"]=="":
+        print(f"[i] omero_group not provided using 'Project' field ({row.Project})")
+        row["omero_group"] = row["Project"]
+
+    if pd.isnull(row["omero_project"]) or row["omero_project"]=="":
+        print(f"[i] omero_project not provided using 'Tissue_1' field ({row.Tissue_1})")
+        row["omero_project"] = row["Tissue_1"]
+ 
+    row["Meas_folder_with_zmode"] = params.dir
+
+    if row["omero_username"] == "nan" or row["omero_username"] == "":
+        print(f"[i] omero_username not provided using 'Researcher' field ({row.Researcher})")
+        row["omero_username"] = row["Researcher"]
 
     all_sections = []
     for img_p in img_paths:
         # print(img_p)
         row_section = row.copy()
-        row_section["OMERO_DATASET"] = generate_omero_dataset(row, img_p)
-
-        file_prefix = (
-            row_section.SlideID
-            if row_section.SlideID != "*"
-            else row_section.OMERO_project
-        )
-        new_name_list = [
-            file_prefix,
-            row_section.OMERO_DATASET,
-            "Meas" + row_section.Measurement,
-            Path(img_p).name,
-        ]
+        if pd.isnull(row_section["omero_dataset"]) or row_section["omero_dataset"]=="":
+            dn = generate_omero_dataset(row, img_p)
+            print(f"[i] omero_dataset not provided using autogenerated dataset name '{dn}'")
+            row_section["omero_dataset"] = dn
+        file_prefix = row_section.SlideID if row_section.SlideID != "*" else row_section.omero_project
+        ori_fn = Path(img_p).name
+        m = re.search("(\w)(\d+)_F.*T.*.tiff", ori_fn)
+        row_index = m.group(1)
+        col_index = m.group(2)
+        zfilled_filename = ori_fn.replace(row_index+col_index, row_index + col_index.zfill(2))
+        new_name_list = [file_prefix,
+                row_section.omero_dataset,
+                "Meas" + row_section.Measurement,
+                zfilled_filename]
         row_section["filename"] = "_".join(new_name_list).replace("tiff", "tif")
-
-        save_yaml(
-            generate_yaml(img_p, row_section), dir_in + "/" + row_section["filename"]
-        )
-
+        #row_section["file"] = f"{row_section['location']}/{row_section['filename']}"
+        save_yaml(generate_yaml(img_p, row_section), params.dir + "/" + row_section["filename"])
         renamed_p = "/".join([str(Path(img_p).parent), row_section.filename])
         img = imread(img_p)
         row_section["original_file_path"] = img_p
@@ -171,13 +163,27 @@ def process_one_slide(row, dir_in, mount_point, server):
     return pd.DataFrame(all_sections)
 
 
-def main(dir_in, log_tsv, server, mount_point):
-    log = pd.read_csv(log_tsv, sep="\t", dtype={"Measurement": str})
+def main(args):
+    log = pd.read_csv(args.log_tsv, sep="\t", dtype={"Measurement":str})
     all_sections = []
     for i in range(log.shape[0]):
-        all_sections.append(process_one_slide(log.iloc[i], dir_in, mount_point, server))
-    pd.concat(all_sections).to_csv(f"{dir_in}.tsv", sep="\t", index=False)
+        all_sections.append(process_one_slide(log.iloc[i] ,args))
+    pd.concat(all_sections).to_csv(
+            "%s.tsv" %args.dir, sep="\t", index=False)
 
 
 if __name__ == "__main__":
-    fire.Fire(main)
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-dir", type=str,
+            required=True)
+
+    parser.add_argument("-log_tsv", type=str,
+            required=True)
+
+    parser.add_argument("-server", type=str)
+    parser.add_argument("-mount_point", type=str)
+
+    args = parser.parse_args()
+
+    main(args)
