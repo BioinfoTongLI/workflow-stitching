@@ -3,11 +3,6 @@
 nextflow.enable.dsl=2
 
 params.mount_point = "/nfs/team283_imaging/"
-
-/*PE stitching related parameters*/
-params.gap = 4000
-params.z_mode = 'max'
-
 params.log = params.mount_point + '0Misc/stitching_log_files/2022.05.04_iNeurons.xlsx'
 params.proj_code = "Test_deleteme"
 params.from = 0
@@ -28,11 +23,6 @@ params.image_config = [
     [],
     []
 ]
-
-zarr_dir = "/nfs/team283_imaging/0HarmonyZarr/"
-/*zarr_dir = "/nfs/team283_imaging/playground_Tong/temp_nemo1_convert/"*/
-
-include { xlsx_to_tsv; stitch; post_process; rename } from './workflows/PE_stitch'
 
 /*
     Convert image exported tiles to ome zarr using bioformats2raw
@@ -70,6 +60,152 @@ process Tiles_to_ome_zarr {
     /usr/local/bin/_entrypoint.sh bioformats2raw -w ${camera_dim} -h ${camera_dim} $mea_folder/${ome_index} "${stem}.zarr"
     """
 }
+
+
+process MIP_zarr_to_tiled_tiff {
+    debug debug
+
+    /*label "default"*/
+    cpus 20
+    memory 120.Gb
+    queue 'imaging'
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/ashlar_preprocess.sif':
+        'ashlar_preprocess:latest'}"
+    clusterOptions "-m 'node-11-3-3'"
+
+    storeDir params.out_dir + "/${params.proj_code}"
+
+    input:
+    tuple val(stem), val(ind), path(ome_zarr), val(hardware)
+    tuple val(from), val(to)
+
+    output:
+    tuple val(stem), val(ind), path(out_file_name), emit: tif
+    tuple val(stem), val(ind), path(xml_name), emit: xml
+
+    script:
+    out_file_name = "${stem}_${from}_${to}.ome.tif"
+    xml_name = "${stem}.xml"
+    """
+    mip_zarr_to_tiled_tiff.py ${hardware} -zarr_in ${ome_zarr} -out_tif "${out_file_name}" -select_range [${from},${to}]
+    cp ${ome_zarr}/OME/METADATA.ome.xml "$xml_name"
+    """
+}
+
+
+/*
+    Generate rendering.yaml for each image and update the tsv for OMERO import
+*/
+process post_process {
+    debug debug
+
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/stitching_process.sif':
+        container_path}"
+    containerOptions "${workflow.containerEngine == 'singularity' ?
+        '-B ' + params.mount_point + ':' + params.mount_point :
+        '-v ' + params.mount_point + ':' + params.mount_point}"
+
+    errorStrategy "retry"
+
+    storeDir params.mount_point + '0Misc/stitching_single_tsvs'
+    /*publishDir params.mount_point + '0Misc/stitching_single_tsvs', mode:"copy"*/
+
+    input:
+    tuple val(meas), path(meas_folder), path(tsv)
+    val server
+    val mount_point
+
+    output:
+    path "${meas_folder}.tsv"
+
+    script:
+    """
+    post_process.py --dir_in $meas_folder --log_tsv $tsv --server ${server} --mount_point ${mount_point}
+    """
+}
+
+
+/*
+    Rename the files to be biologically-relevant
+*/
+process rename {
+    debug debug
+
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/stitching_process.sif':
+        container_path}"
+    containerOptions "${workflow.containerEngine == 'singularity' ?
+        '-B ' + params.mount_point + ':' + params.mount_point + ':rw' :
+        '-v ' + params.mount_point + ':' + params.mount_point + ':rw'}"
+
+    publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"
+
+    input:
+    path tsvs
+    val out_dir
+    val proj_code
+    val stamp
+    val mount_point
+    val on_corrected
+
+    output:
+    path "${proj_code}*${stamp}.tsv"
+
+    script:
+    """
+    rename.py $tsvs --export_dir "${out_dir}" --project_code "${proj_code}" --stamp "${stamp}" --mount_point "${mount_point}" --corrected "${on_corrected}"
+    """
+}
+
+
+process Generate_companion_ome {
+    debug debug
+
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/stitching_process.sif':
+        container_path}"
+    containerOptions "-B ${params.mount_point}"
+    /*publishDir params.mount_point + '0Misc/stitching_tsv_for_import', mode: "copy"*/
+
+    input:
+    tuple val(base), path(meas_folder)
+
+    output:
+    tuple val(base), path("${meas_folder}/*.companion.ome"), path("${meas_folder}/*.ome.tiff")
+
+    script:
+    """
+    generate_companion_ome.py --images_path ${meas_folder}
+    cp *.companion.ome ${meas_folder}
+    """
+}
+
+
+process bf2raw {
+    tag "${companion}"
+    debug debug
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/bf2raw-0.5.0rc1.sif':
+        'openmicroscopy/bioformats2raw:0.5.0rc1'}"
+    storeDir params.hcs_zarr
+
+    input:
+    tuple val(stem), path(companion), path(tifs)
+
+    output:
+    tuple val(stem), path("${stem}.zarr")
+
+    script:
+    """
+    /usr/local/bin/_entrypoint.sh bioformats2raw ./${companion} "${stem}.zarr"
+    #/opt/bioformats2raw/bin/bioformats2raw ./${companion} "${stem}.zarr"
+    """
+}
+
 
 process ashlar_single_stitch {
     debug debug
@@ -213,6 +349,58 @@ process zproj_tiled_tiff {
     Tiles_to_ashlar.py --input_folder ${tiff_folder} --file_out ./${stem}.ome.tif
     """
 }
+/*
+    [Optional, so errorStrategy = "ignore"]
+    Append stitching benchmark from nextflow.trace into the tsv log
+*/
+/*params.trace_file = ''*/
+
+/*trace_file_p = Channel.fromPath(params.trace_file)*/
+
+/*process combine {*/
+    /*echo true*/
+    /*errorStrategy "ignore"*/
+    /*conda baseDir + '/conda_env.yaml'*/
+    /*publishDir params.mount_point +"0Misc/stitching_merged_log", mode:"copy"*/
+
+    /*input:*/
+    /*path log_p from tsv_for_import*/
+    /*path trace from trace_file_p*/
+
+    /*output:*/
+    /*path "${params.proj_code}_merge_${params.stamp}.tsv"*/
+
+    /*script:*/
+    /*"""*/
+    /*python ${baseDir}/log_trace_combine.py -log $log_p -trace ${trace} -out_stem ${params.proj_code}_merge_${params.stamp}*/
+    /*"""*/
+/*}*/
+
+workflow _metadata_parsing {
+    xlsx_to_tsv(channel.fromPath(params.log, checkIfExists: true),
+        params.mount_point, params.gap, params.z_mode,
+        params.on_corrected, params.index_file)
+    /*
+        Put parameter channel for stitching
+    */
+    tsvs_with_names = xlsx_to_tsv.out
+        .flatten()
+        .map{it -> [it.baseName, it]}
+    /*tsvs_with_names.view()*/
+
+
+    stitching_features = xlsx_to_tsv.out
+        .flatten()
+        .splitCsv(header:true, sep:"\t")
+        .map{it -> [it.measurement_name, it.Stitching_Z, it.gap]}
+        .groupTuple()
+        .map{it -> [it[0], it[1][0], it[2][0]]}
+    /*stitching_features.view()*/
+
+    emit:
+    stitching_features
+}
+
 
 workflow _mip_and_stitch {
     take:
@@ -233,61 +421,9 @@ workflow _mip_and_stitch {
     }
 }
 
-process Generate_companion_ome {
-    debug debug
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        sif_folder + '/stitching_process.sif':
-        container_path}"
-    containerOptions "-B ${params.mount_point}"
-    storeDir "${params.out_dir}/${params.proj_code}"
-
-    input:
-    tuple val(base), path(meas_folder), path(tsv_meta_file)
-
-    output:
-    tuple val(base), path("${meas_folder}/*.companion.ome")
-
-    script:
-    """
-    generate_companion_ome.py --images_path ${meas_folder}
-    cp *.companion.ome ${meas_folder}
-    """
-}
-
-workflow PE_STITCH {
-    main:
-    xlsx_to_tsv(channel.from(
-            [[['mount_point': params.mount_point, 'gap': params.gap, 'z_mode': params.z_mode],
-            file(params.log, checkIfExists : true)]]
-        )
-    )
-    /*
-     *  Put parameter channel for stitching
-     */
-    tsvs_with_names = xlsx_to_tsv.out.flatten()
-        .map{it -> [it.baseName, it]}
-
-    stitching_features = xlsx_to_tsv.out.flatten()
-        .splitCsv(header:true, sep:"\t")
-        .map{it -> [it.measurement_name, it.Stitching_Z, it.gap, it.index_file]}
-        .groupTuple()
-        .map{it -> [it[0], it[1][0], it[2][0], it[3][0]]}
-
-    stitch(stitching_features)
-
-    emit:
-    stitch.out.join(tsvs_with_names)
-}
-
-workflow PE_HCS {
-    Generate_companion_ome(PE_STITCH())
-}
-
-workflow PE_WSI{
-    post_process(PE_STITCH())
-    rename(post_process.collect())
-}
+zarr_dir = "/nfs/team283_imaging/0HarmonyZarr/"
+/*zarr_dir = "/nfs/team283_imaging/playground_Tong/temp_nemo1_convert/"*/
 
 // use ashlar to stitch images from PE
 workflow ashlar {
