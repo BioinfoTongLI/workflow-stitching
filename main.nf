@@ -29,6 +29,8 @@ params.image_config = [
     []
 ]
 
+include { two_step_recon } from './workflows/preprocess'
+
 zarr_dir = "/nfs/team283_imaging/0HarmonyZarr/"
 /*zarr_dir = "/nfs/team283_imaging/playground_Tong/temp_nemo1_convert/"*/
 
@@ -319,4 +321,14 @@ workflow nemo2 {
     zproj_tiled_tiff(Nemo2_to_tiled_tiff.out)
     ashlar_single_stitch(zproj_tiled_tiff.out.tif, params.reference_ch, params.max_shift)
     update_channel_names(ashlar_single_stitch.out.stitched_tif.join(zproj_tiled_tiff.out.tif, by: [0, 1]))
+}
+
+workflow run_two_step_recon {
+    params.input = [
+        /*[['id':'test'], '/nfs/team283_imaging/Nemo2_data/FLNG_ISS/2022_11_08/C48/Cycle_1/Cam1_2/Cam1_2_MMStack_Cycle_1-Grid_0_1.ome.tif'],*/
+        [['id':'test'], '/nfs/team283_imaging/Nemo2_data/FLNG_ISS/2022_11_08/HSTS/Cycle_1/Cam2_1/Cam2_1_MMStack_Pos0.ome.tif'],
+    ]
+    to_deconvolve = channel.from(params.input)
+        .map{it -> [it[0], file(it[1], checkIfExists:true).getParent(), file(it[1]).getName()]}
+    two_step_recon(to_deconvolve)
 }
