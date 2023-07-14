@@ -40,8 +40,6 @@ include { xlsx_to_tsv; stitch; post_process; rename } from './workflows/PE_stitc
 process Tiles_to_ome_zarr {
     debug debug
 
-    label "default"
-
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         sif_folder + '/bf2raw-0.5.0rc1.sif':
         'quay.io/bioinfotongli/bioformats2raw:0.5.0rc1'}"
@@ -74,10 +72,6 @@ process Tiles_to_ome_zarr {
 process ashlar_single_stitch {
     debug debug
 
-    cpus 2
-    memory 15.Gb
-    queue 'imaging'
-
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         sif_folder + '/ashlar.sif':
         "ashlar:latest" }"
@@ -101,10 +95,6 @@ process ashlar_single_stitch {
 
 process ashlar_stitch_register {
     debug debug
-
-    cpus 2
-    memory 15.Gb
-    queue 'imaging'
 
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         sif_folder + '/ashlar.sif':
@@ -131,11 +121,6 @@ process ashlar_stitch_register {
 process update_channel_names {
     debug debug
 
-    /*label "default"*/
-    cpus 1
-    memory 30.Gb
-    queue 'imaging'
-
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         sif_folder + '/ashlar_preprocess.sif':
         'ashlar_preprocess:latest'}"
@@ -161,9 +146,6 @@ process update_channel_names {
 process Nemo2_to_tiled_tiff {
     debug debug
 
-    /*label "default"*/
-    /*cpus 5*/
-    /*memory 300.Gb*/
     queue 'imaging'
 
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -191,9 +173,6 @@ process Nemo2_to_tiled_tiff {
 process zproj_tiled_tiff {
     debug debug
 
-    /*label "default"*/
-    /*cpus 5*/
-    /*memory 100.Gb*/
     queue 'imaging'
 
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -257,7 +236,8 @@ process Generate_companion_ome {
 
 workflow PE_STITCH {
     main:
-    xlsx_to_tsv(channel.from(
+    xlsx_to_tsv(
+        channel.from(
             [[['mount_point': params.mount_point, 'gap': params.gap, 'z_mode': params.z_mode],
             file(params.log, checkIfExists : true)]]
         )
@@ -280,19 +260,19 @@ workflow PE_STITCH {
     stitch.out.join(tsvs_with_names)
 }
 
+// Stitch with PE's own stitching software and then generate companion ome file for the folder
 workflow PE_HCS {
     Generate_companion_ome(PE_STITCH())
 }
 
+// Stitch with PE's own stitching software and then rename the files
 workflow PE_WSI{
     post_process(PE_STITCH())
     rename(post_process.collect())
 }
 
-// use ashlar to stitch images from PE
+// se ashlar to stitch PE tiles
 workflow ashlar {
-    /*_metadata_parsing()*/
-    /*_metadata_parsing.out.view()*/
     params.meas_dirs = [["/nfs/team283_imaging/0HarmonyExports/LY_BRC/LY_BRC_AT0002__2022-10-07T17_43_01-Measurement 17/"]]
     hardware = "phenix"
     image_size = 2160
