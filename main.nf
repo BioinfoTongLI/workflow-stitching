@@ -193,6 +193,33 @@ process zproj_tiled_tiff {
     """
 }
 
+process MIP_zarr_to_tiled_tiff {
+    debug debug
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        sif_folder + '/ashlar_preprocess.sif':
+        'ashlar_preprocess:latest'}"
+    clusterOptions "-m 'node-11-3-3'"
+
+    storeDir params.out_dir + "/${params.proj_code}"
+
+    input:
+    tuple val(stem), val(ind), path(ome_zarr), val(hardware)
+    tuple val(from), val(to)
+
+    output:
+    tuple val(stem), val(ind), path(out_file_name), emit: tif
+    tuple val(stem), val(ind), path(xml_name), emit: xml
+
+    script:
+    out_file_name = "${stem}_${from}_${to}.ome.tif"
+    xml_name = "${stem}.xml"
+    """
+    mip_zarr_to_tiled_tiff.py ${hardware} -zarr_in ${ome_zarr} -out_tif "${out_file_name}" -select_range [${from},${to}]
+    cp ${ome_zarr}/OME/METADATA.ome.xml "$xml_name"
+    """
+}
+
 workflow _mip_and_stitch {
     take:
     ome_zarr
@@ -271,7 +298,7 @@ workflow PE_WSI{
     rename(post_process.collect())
 }
 
-// se ashlar to stitch PE tiles
+// Use ashlar to stitch PE tiles
 workflow ashlar {
     params.meas_dirs = [["/nfs/team283_imaging/0HarmonyExports/LY_BRC/LY_BRC_AT0002__2022-10-07T17_43_01-Measurement 17/"]]
     hardware = "phenix"
