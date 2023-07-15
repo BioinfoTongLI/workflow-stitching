@@ -142,7 +142,6 @@ def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, 
         ntile = 0
         # go thourgh each tile, register and save it
         for tile in tif.series:
-
             pc1_volume = tile.asarray()
             pc1_axes = tile.axes
             pc1_projax = pc1_axes.find("Z")

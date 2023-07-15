@@ -29,31 +29,39 @@ def main(args):
 
         # clean any lead/tail spaces
         for c in df.columns:
-            if isinstance(row[c],str):
+            if isinstance(row[c], str):
                 row[c] = row[c].strip()
 
         if str(row.Automated_PlateID) != "nan":
             tmp_id = row.Automated_PlateID.strip()
         else:
             tmp_id = row.SlideID.strip()
-        meas_path = "".join([args.root,"/", row.Export_location.replace("\\", "/"), args.export_loc_suffix + "/",
-            str(tmp_id)+"_",
-            "*Measurement ",
-            row.Measurement, "/"])
+        meas_path = "".join(
+            [
+                args.root,
+                "/",
+                row.Export_location.replace("\\", "/"),
+                args.export_loc_suffix + "/",
+                str(tmp_id) + "_",
+                "*Measurement ",
+                row.Measurement,
+                "/",
+            ]
+        )
 
         # loosely search for both Index.xml (Phenix) and Index.idx.xml (Operetta)
         print(f"Searching for measurement matching: '{meas_path}'")
         full_p = glob(f"{meas_path}/Images/Index*.xml")
         print(f"Index file(s) found: {full_p}")
-        if len(full_p)==0:
+        if len(full_p) == 0:
             raise SystemExit(f"Index file '{meas_path}/Images/Index*.xml' not found.")
-        elif len(full_p)>1:
+        elif len(full_p) > 1:
             print(f"More than one index file. Will use the first match '{full_p[0]}'.")
         full_p = Path(full_p[0])
-        #print(meas_path, full_p)
+        # print(meas_path, full_p)
         # each line of the log file should corresponds to one sinlge measurement in export folder
         # assert len(full_p) == 1
-        #export_loc = meas_path # full_p.replace(args.PE_index_file_anchor, "")
+        # export_loc = meas_path # full_p.replace(args.PE_index_file_anchor, "")
         # get the measurement folder's name
         df.loc[ind, "measurement_name"] = full_p.parents[1].stem
         # get the path of the index file within the measurement folder
@@ -67,17 +75,14 @@ def main(args):
 
     df.groupby("measurement_name").apply(save_sub_df)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-xlsx", type=str,
-            required=True)
-    parser.add_argument("-root", type=str,
-            required=True)
-    parser.add_argument("-gap", type=str,
-            required=True)
-    parser.add_argument("-zmode", type=str,
-            required=True)
+    parser.add_argument("-xlsx", type=str, required=True)
+    parser.add_argument("-root", type=str, required=True)
+    parser.add_argument("-gap", type=str, required=True)
+    parser.add_argument("-zmode", type=str, required=True)
     parser.add_argument("-export_loc_suffix", type=str, default="")
 
     args = parser.parse_args()

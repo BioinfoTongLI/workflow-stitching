@@ -26,7 +26,6 @@ def grab_subsample(
     y: int = 65000 - 30000,
     d: int = 10000,
 ) -> None:
-
     """source_images_folder should be list of folders for copying
 
     Takes subsample of the whole image"""

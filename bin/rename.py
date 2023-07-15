@@ -18,8 +18,14 @@ import shutil
 
 def main(args):
     df = pd.concat([pd.read_csv(tsv, sep="\t") for tsv in args.tsvs])
-    df["location"] = args.export_dir + args.project_code + "/" +  df.Meas_folder_with_zmode
-    root_fpath = "%s/0HarmonyStitched/%s%s/" %(args.mount_point, args.project_code, args.corrected)
+    df["location"] = (
+        args.export_dir + args.project_code + "/" + df.Meas_folder_with_zmode
+    )
+    root_fpath = "%s/0HarmonyStitched/%s%s/" % (
+        args.mount_point,
+        args.project_code,
+        args.corrected,
+    )
 
     for i in range(df.shape[0]):
         line = df.iloc[i]
@@ -37,19 +43,17 @@ def main(args):
 
     # unrenmaed_df = pd.concat(unrenmaed, axis=1).T
     # unrenamed_file_name = "%s_unrenamed_%s.tsv"\
-            # %(args.project_code, args.stamp)
+    # %(args.project_code, args.stamp)
     # unrenmaed_df.to_csv(unrenamed_file_name, sep="\t", index=False)
 
-    import_name = "%s_import_%s.tsv"\
-            %(args.project_code, args.stamp)
+    import_name = "%s_import_%s.tsv" % (args.project_code, args.stamp)
     df.to_csv(import_name, sep="\t", index=False)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-tsvs", type=str, nargs="+",
-            required=True)
+    parser.add_argument("-tsvs", type=str, nargs="+", required=True)
     parser.add_argument("-export_dir", type=str, required=True)
     parser.add_argument("-project_code", type=str, required=True)
     parser.add_argument("-stamp", type=str, required=True)

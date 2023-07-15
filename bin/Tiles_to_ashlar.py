@@ -18,7 +18,6 @@ def OpenTiff(file_path):
 
 
 def GenPosList(TileConfFile, FolderWithTiles):
-
     filelist = glob(join(FolderWithTiles, "*.tif"))
     file_path = filelist[0]  # take any tile image
     NS = {"ome": "http://www.openmicroscopy.org/Schemas/OME/2016-06"}
