@@ -1,110 +1,151 @@
-#! /usr/bin/env python3
-from tifffile import TiffFile, TiffWriter, imwrite
-from glob import glob
-from os.path import split, join, isdir, isfile
 import json
+import logging
 import xml.etree.ElementTree as ET
-import numpy as np
-from skimage.exposure import rescale_intensity, match_histograms, histogram
-import csv
-from pystackreg import StackReg
-import pandas as pd
-from ome_types import from_xml, to_xml, from_tiff
-import tifffile
+
 import fire
+import numpy as np
+import pandas as pd
+import skimage.exposure as exposure
+import tifffile
+from glob import glob
 from natsort import natsorted
-import warnings
+from os.path import join
+from pystackreg import StackReg
+from skimage.exposure import rescale_intensity
+from tifffile import TiffFile, imwrite
+from warnings import filterwarnings
 
-warnings.filterwarnings("ignore")
+filterwarnings("ignore")
+
+logging.basicConfig(level=logging.INFO)
 
 
-def get_registration_matrixlist(beadstack1, beadstack2, ChConfig):
-    # set up registration matrices - expected only one tif file in each reg folder!!
-    # regfile1_path = glob(join(FolderRegPC1, "*.tif"))
-    # with TiffFile(regfile1_path[0]) as tif1:
+def get_registration_matrixlist(beadstack1: str, beadstack2: str, channel_config: pd.DataFrame) -> List[np.ndarray]:
+    """
+    Get registration matrices for each channel in the configuration.
+
+    Args:
+        beadstack1 (str): Path to the beadstack file for camera 1.
+        beadstack2 (str): Path to the beadstack file for camera 2.
+        channel_config (pd.DataFrame): DataFrame containing the channel configuration.
+
+    Returns:
+        list: List of transformation matrices for each channel.
+    """
     with TiffFile(beadstack1) as tif1:
         volume1 = tif1.asarray()
         axes1 = tif1.series[0].axes
 
-    # regfile2_path = glob(join(FolderRegPC2, "*.tif"))
-    # with TiffFile(regfile2_path[0]) as tif2:
     with TiffFile(beadstack2) as tif2:
         volume2 = tif2.asarray()
         axes2 = tif2.series[0].axes
 
-    # z projection of reg images
     proj1 = axes1.find("Z")
     zproj1 = np.max(volume1, axis=proj1)
+
     proj2 = axes2.find("Z")
     zproj2 = np.max(volume2, axis=proj2)
 
-    TransfMatrList = []
-    nn = 0
-    sr = StackReg(StackReg.AFFINE)
-    for regpc, regchn in zip(ChConfig.RegPC, ChConfig.RegChN):
+    transf_matr_list = []
+    for regpc, regchn in zip(channel_config.RegPC, channel_config.RegChN):
         if regpc == 1:
-            ChArray = rescale_intensity(zproj1[regchn, :, :])
+            ch_array = rescale_intensity(zproj1[regchn, :, :])
         elif regpc == 2:
-            ChArray = rescale_intensity(zproj2[regchn, :, :])
+            ch_array = rescale_intensity(zproj2[regchn, :, :])
         else:
-            print("RegPC should be either 1 or 2!")
+            raise ValueError("RegPC should be either 1 or 2!")
 
-        if nn == 0:
-            RefCh = ChArray
+        if not transf_matr_list:
+            ref_ch = ch_array
         else:
-            TrMat = sr.register(RefCh, ChArray)
-            TransfMatrList.append(TrMat)
-        nn = nn + 1
+            sr = StackReg(StackReg.AFFINE)
+            tr_mat = sr.register(ref_ch, ch_array)
+            transf_matr_list.append(tr_mat)
 
-    return TransfMatrList
+    return transf_matr_list
 
 
-def GetZProjTileCam2(TiffSeries, NZplanes, NCh, nTile):
-    FrameStart = NZplanes * NCh * nTile
-    # here TCZYX order is assumed
-    SizeImg = TiffSeries[0].asarray().shape
-    ii = 0
-    img = np.zeros((NCh, NZplanes, SizeImg[0], SizeImg[1]))
-    for chn in range(NCh):
-        for zpl in range(NZplanes):
-            img[chn, zpl, :, :] = TiffSeries[FrameStart + ii].asarray()
-            ii += 1
+def get_zproj_tile_cam2(tiff_series, nz_planes, n_ch, n_tile):
+    """
+    Get the z-projected tile for camera 2.
+
+    Args:
+        tiff_series (list): List of TiffFile objects for camera 2.
+        nz_planes (int): Number of z-planes.
+        n_ch (int): Number of channels.
+        n_tile (int): Tile index.
+
+    Returns:
+        np.ndarray: Z-projected tile for camera 2.
+    """
+    frame_start = nz_planes * n_ch * n_tile
+    size_img = tiff_series[0].asarray().shape
+    img = np.zeros((n_ch, nz_planes, size_img[0], size_img[1]))
+    for chn in range(n_ch):
+        for zpl in range(nz_planes):
+            img[chn, zpl, :, :] = tiff_series[frame_start].asarray()
+            frame_start += 1
     img_zproj = np.max(img, axis=1)
     return img_zproj
 
 
-def metadata_values(json_data, XML_data):
-    poslist = []
-    namelist = []
+def metadata_values(json_data, xml_data):
+    """
+    Get metadata values from JSON and XML data.
+
+    Args:
+        json_data (dict): JSON data.
+        xml_data (xml.etree.ElementTree.Element): XML data.
+
+    Returns:
+        tuple: Tuple containing pixel size, position list, name list, and channel list.
+    """
+    pos_list = []
+    name_list = []
     pixelsize = [
-        XML_data[1][3].attrib["PhysicalSizeX"],
-        XML_data[1][3].attrib["PhysicalSizeY"],
-        XML_data[1][3].attrib["PhysicalSizeZ"],
+        xml_data[1][3].attrib["PhysicalSizeX"],
+        xml_data[1][3].attrib["PhysicalSizeY"],
+        xml_data[1][3].attrib["PhysicalSizeZ"],
     ]
     channels = json_data["ChNames"]
     for i in range(json_data["Positions"]):
-        poslist.append(
+        pos_list.append(
             json_data["StagePositions"][i]["DevicePositions"][0]["Position_um"]
         )
-        namelist.append(XML_data[i + 1].attrib["Name"])
-    return (pixelsize, poslist, namelist, channels)
+        name_list.append(xml_data[i + 1].attrib["Name"])
+    return (pixelsize, pos_list, name_list, channels)
 
 
-def write_tileconfig(poslist, exportdir):
-    outfile = join(exportdir, "TileConfiguration.txt")
-    # print(outfile)
+def write_tileconfig(pos_list, export_dir):
+    """
+    Write the TileConfiguration.txt file.
+
+    Args:
+        pos_list (list): List of positions.
+        export_dir (str): Path to the export directory.
+    """
+    outfile = join(export_dir, "TileConfiguration.txt")
     output = open(outfile, "w")
     output.write("dim=2\n")
-    tileno = len(poslist)
-    for i in range(tileno):
-        tilestring = "{};;({},{})\n".format(
-            i, -1 * poslist[i][0], -1 * poslist[i][1]
-        )  # why -1??
-        output.write(tilestring)
+    tile_no = len(pos_list)
+    for i in range(tile_no):
+        tile_string = "{};;({},{})\n".format(
+            i, -1 * pos_list[i][0], -1 * pos_list[i][1]
+        )
+        output.write(tile_string)
     output.close
 
 
 def get_pixel_attrib(file_path):
+    """
+    Get pixel attributes from a TIFF file.
+
+    Args:
+        file_path (str): Path to the TIFF file.
+
+    Returns:
+        list: List containing pixel size and units.
+    """
     with TiffFile(file_path) as fh:
         ome_md = fh.ome_metadata
 
@@ -121,6 +162,16 @@ def get_pixel_attrib(file_path):
 
 
 def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, OutDir):
+    """
+    Register and save tiles.
+
+    Args:
+        folder_pc1_file (str): Path to the first Tiff file of Camera 1 with all metadata.
+        folder_pc2 (str): Path to the images from Camera 2.
+        transf_matr_list (list): List of transformation matrices for each channel.
+        channel_config (pd.DataFrame): DataFrame containing the channel configuration.
+        out_dir (str): Path to the output directory.
+    """
     # here I assume that order of images recorded is the same as order of their names
     filelist2 = glob(join(FolderPC2, "*.tif"))
     filelist2 = natsorted(filelist2)
@@ -148,7 +199,7 @@ def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, 
             pc1_zproj = np.max(pc1_volume, axis=pc1_projax)
 
             # get zprojected tile from camrera 2
-            pc2_zproj_tile = GetZProjTileCam2(Ser_cam2, NZpl_cam2, NCh_cam2, ntile)
+            pc2_zproj_tile = get_zproj_tile_cam2(Ser_cam2, NZpl_cam2, NCh_cam2, ntile)
             # go through all channels and register them (except ref channel)
             nch = 0
             NewTile = np.zeros(
@@ -200,12 +251,21 @@ def register_and_save_tiles(FolderPC1File, FolderPC2, TransfMatrList, ChConfig, 
     write_tileconfig(poslist, OutDir)
 
 
-def main(FolderPC1File, FolderPC2, beadstack1, beadstack2, ConfigFile, OutDir):
-    # FolderPC1FIle - path to the first tif file of Camera 1 with all metadata
-    # FolderPC2 - folder to the images from PC2
-    ChConfig = pd.read_csv(ConfigFile, sep="\t")
-    TransfMat = get_registration_matrixlist(beadstack1, beadstack2, ChConfig)
-    register_and_save_tiles(FolderPC1File, FolderPC2, TransfMat, ChConfig, OutDir)
+def main(folder_pc1_file, folder_pc2, beadstack1, beadstack2, config_file, out_dir):
+    """
+    Main function.
+
+    Args:
+        folder_pc1_file (str): Path to the first Tiff file of Camera 1 with all metadata.
+        folder_pc2 (str): Path to the images from Camera 2.
+        beadstack1 (str): Path to the beadstack file for camera 1.
+        beadstack2 (str): Path to the beadstack file for camera 2.
+        config_file (str): Path to the channel configuration file.
+        out_dir (str): Path to the output directory.
+    """
+    channel_config = pd.read_csv(config_file, sep="\t")
+    transf_mat = get_registration_matrixlist(beadstack1, beadstack2, channel_config)
+    register_and_save_tiles(folder_pc1_file, folder_pc2, transf_mat, channel_config, out_dir)
 
 
 if __name__ == "__main__":
