@@ -4,4 +4,8 @@ RUN apt-get install procps -y
 
 RUN conda install -c conda-forge python==3.11.0 bioformats_jar
 
-RUN python3 -m pip install aicsimageio==4.11.0 scikit-image>=0.18 pandas numpy openpyxl
+RUN python3 -m pip install aicsimageio==4.11.0 scikit-image>=0.18 \
+	pandas==2.0.3 \
+	numpy==1.25.1 \
+	openpyxl==3.1.2 \
+	fire==0.5.0
