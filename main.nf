@@ -29,10 +29,32 @@ params.image_config = [
     []
 ]
 
-zarr_dir = "/nfs/team283_imaging/0HarmonyZarr/"
-/*zarr_dir = "/nfs/team283_imaging/playground_Tong/temp_nemo1_convert/"*/
-
 include { xlsx_to_tsv; stitch; post_process; rename } from './workflows/PE_stitch'
+
+/*
+    Convert raw exported tiles to tiled ome tif using aicsimageio
+*/
+process Tiles_to_tiled_ome_tif {
+    debug debug
+
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'bioinfotongli/preprocess:latest':
+        'bioinfotongli/preprocess:latest'}"
+    // publishDir params.out_dir, mode: 'copy'
+    publishDir "/lustre/scratch126/cellgen/team283/NXF_WORK/tiled_ome_tiffs", mode: 'copy'
+
+    input:
+    tuple val(meta), path(mea_folder), val(master_file)
+
+    output:
+    tuple val(meta), path(out_ome_tif)
+
+    script:
+    out_ome_tif = "${meta['id']}_tiled.ome.tif"
+    """
+    tiles_to_tiled_ome_tif.py ${mea_folder}/${master_file} ${out_ome_tif}
+    """
+}
 
 /*
     Convert image exported tiles to ome zarr using bioformats2raw
@@ -43,29 +65,25 @@ process Tiles_to_ome_zarr {
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         sif_folder + '/bf2raw-0.5.0rc1.sif':
         'quay.io/bioinfotongli/bioformats2raw:0.5.0rc1'}"
-
-    /*containerOptions "${workflow.containerEngine == 'singularity' ?*/
-        /*'-B ' + params.mount_point + ':/data_in/:ro' :*/
-        /*'-v ' + params.mount_point + ':/data_in/:ro'}"*/
-
-    storeDir zarr_dir
+    publishDir "/lustre/scratch126/cellgen/team283/NXF_WORK/tiled_ome_tiffs", mode: 'copy'
 
     input:
-    tuple val(ind), path(mea_folder)
-    val(ome_index)
-    tuple val(hardware), val(camera_dim)
+    tuple val(meta), path(mea_folder), val(master_file)
 
     output:
-    tuple val(stem), val(ind), path("${stem}.zarr"), val(hardware)
+    tuple val(meta), path("${stem}.zarr.zip")
 
     script:
-    if (hardware == 'nemo1'){
-        stem = file(ome_index).baseName
+    def camera_dim = meta['camera_dim']
+    if (meta['hardware'] == 'nemo1'){
+        stem = file(master_file).baseName
     } else {
         stem = file(mea_folder).baseName
     }
     """
-    /usr/local/bin/_entrypoint.sh bioformats2raw -w ${camera_dim} -h ${camera_dim} $mea_folder/${ome_index} "${stem}.zarr"
+    /usr/local/bin/_entrypoint.sh bioformats2raw -w ${camera_dim} -h ${camera_dim} $mea_folder/${master_file} "${stem}.zarr"
+    zip -r "${stem}.zarr.zip" "${stem}.zarr"
+    rm -r "${stem}.zarr"
     """
 }
 
@@ -298,12 +316,22 @@ workflow PE_WSI{
     rename(post_process.collect())
 }
 
+params.meas_master = [
+        [['id': "nemo2_cam_1", 'hardware': "nemo2", 'camera_dim': 1960],
+        "/nfs/team283_imaging/Nemo2_data/FLNG_ISS/2023_01_18/Anchor/Cam1_1/Cam1_1_MMStack_Anchor-Grid_0_13.ome.tif"],
+        // [['id': "phenix"], "/nfs/team283_imaging/0HarmonyExports/JM_TCA/t217_jm52_20230710_LipocyteProfilerV2_correct568__2023-07-10T16_02_27-Measurement 1/Images/Index.xml"],
+        // [['id': "nemo1"], "/nfs/team283_imaging/Nemo_data/TL_CDX/TL_CDX_20220830_mouse_hemisphere/tl10_mouse_brain_20220830_1/tl10_mouse_brain_20220830_1_MMStack_Mouse_brain-Grid_0_4.ome.tif"],
+
+        //Good below
+        [['id': "nemo2_cam_2", 'hardware': "nemo2", 'camera_dim': 1960],
+        "/nfs/team283_imaging/Nemo2_data/FLNG_ISS/2023_01_18/Anchor/Cam2_1/Cam2_1_MMStack_Pos0.ome.tif"],
+    ]
+
 // Use ashlar to stitch PE tiles
 workflow ashlar {
-    params.meas_dirs = [["/nfs/team283_imaging/0HarmonyExports/LY_BRC/LY_BRC_AT0002__2022-10-07T17_43_01-Measurement 17/"]]
     hardware = "phenix"
     image_size = 2160
-    Tiles_to_ome_zarr(channel.from(params.meas_dirs), params.index_file, [hardware, image_size])
+    Tiles_to_ome_zarr(channel.from(params.meas_master), params.index_file, [hardware, image_size])
     _mip_and_stitch(Tiles_to_ome_zarr.out)
 }
 
@@ -326,4 +354,11 @@ workflow nemo2 {
     zproj_tiled_tiff(Nemo2_to_tiled_tiff.out)
     ashlar_single_stitch(zproj_tiled_tiff.out.tif, params.reference_ch, params.max_shift)
     update_channel_names(ashlar_single_stitch.out.stitched_tif.join(zproj_tiled_tiff.out.tif, by: [0, 1]))
+}
+
+workflow {
+    images = channel.from(params.meas_master)
+        .map{it -> [it[0], file(file(it[1]).parent, checkIfExists:true), file(it[1]).name]}
+    // Tiles_to_tiled_ome_tif(images)
+    Tiles_to_ome_zarr(images)
 }
