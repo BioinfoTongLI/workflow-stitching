@@ -17,3 +17,4 @@ single_tsvs/
 *.tsv
 *.html
 *.tif
+results/
