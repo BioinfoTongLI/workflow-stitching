@@ -1,19 +1,42 @@
 {
-    "name": "",
-    "homePage": "",
-    "repos": {
-        "https://github.com/nf-core/modules.git": {
-            "modules": {
-                "nf-core": {
-                    "ashlar": {
-                        "branch": "master",
-                        "git_sha": "81880787133db07d9b4c1febd152c090eb8325dc",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    }
-                }
-            }
+  "name": "",
+  "homePage": "",
+  "repos": {
+    "https://github.com/cellgeni/nf-modules.git": {
+      "modules": {
+        "sanger": {
+          "imaging/generatecompanion": {
+            "branch": "main",
+            "git_sha": "46847f823318e98e7db45030a2f46a323422e59c",
+            "installed_by": ["preprocess_tiles"]
+          },
+          "imaging/preprocess": {
+            "branch": "main",
+            "git_sha": "859be9212fa70de47352e0bb158e8a2e47ad0edc",
+            "installed_by": ["preprocess_tiles"]
+          }
         }
+      },
+      "subworkflows": {
+        "sanger": {
+          "preprocess_tiles": {
+            "branch": "main",
+            "git_sha": "73f195c439f0663bb6068591d2a69e1e4d5724e1",
+            "installed_by": ["subworkflows"]
+          }
+        }
+      }
+    },
+    "https://github.com/nf-core/modules.git": {
+      "modules": {
+        "nf-core": {
+          "ashlar": {
+            "branch": "master",
+            "git_sha": "81880787133db07d9b4c1febd152c090eb8325dc",
+            "installed_by": ["modules"]
+          }
+        }
+      }
     }
+  }
 }
