@@ -20,3 +20,4 @@ single_tsvs/
 results/
 .vscode
 .nextflow
+manifest*
