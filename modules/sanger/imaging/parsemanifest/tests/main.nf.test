@@ -1,28 +1,22 @@
-// nf-test test main.nf.test in tests folder
 nextflow_process {
 
-    name "Test Process IMAGING_GENERATECOMPANION"
+    name "Test Process IMAGING_PARSEMANIFEST"
     script "../main.nf"
-    process "IMAGING_GENERATECOMPANION"
-    config "./nextflow.config"
+    process "IMAGING_PARSEMANIFEST"
 
     tag "modules"
     tag "modules_sanger"
     tag "imaging"
-    tag "imaging/generatecompanion"
+    tag "imaging/parsemanifest"
 
-    test("generatecompanion - PerkinElmer") {
+    test("parse manifest - xlsx") {
 
         when {
-            params {
-                module_args = "--master_file Index.idx.xml"
-            }
             process {
                 """
                 input[0] = [
                     [ id:'test' ], // meta map
-                    0,
-                    file('s3://spatial_demo_datasets/PerkinElmer/Hoechst__2023-03-07T10_17_54-Measurement 2/Images/', checkIfExists: true),
+                    file(params.modules_testdata_base_path + 'genomics/sarscov2/illumina/bam/test.paired_end.sorted.bam', checkIfExists: true),
                 ]
                 """
             }
@@ -34,22 +28,19 @@ nextflow_process {
                 { assert snapshot(process.out).match() }
             )
         }
+
     }
 
-    test("generatecompanion -  stub") {
+    test("parse manifest - xlsx - stub") {
 
         options "-stub"
 
         when {
-            params {
-                module_args = ""
-            }
             process {
                 """
                 input[0] = [
                     [ id:'test' ], // meta map
-                    0,
-                    file('s3://spatial_demo_datasets/PerkinElmer/Hoechst__2023-03-07T10_17_54-Measurement 2/Images/', checkIfExists: true),
+                    file(params.modules_testdata_base_path + 'genomics/sarscov2/illumina/bam/test.paired_end.sorted.bam', checkIfExists: true),
                 ]
                 """
             }
@@ -61,5 +52,7 @@ nextflow_process {
                 { assert snapshot(process.out).match() }
             )
         }
+
     }
+
 }

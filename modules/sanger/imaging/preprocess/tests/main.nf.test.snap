@@ -7,6 +7,7 @@
                         {
                             "id": "test"
                         },
+                        "test_well",
                         "wsi_test.ome.tif:md5,64b2939e7185c68bdfa53f52c38a5f64"
                     ]
                 ],
@@ -18,6 +19,7 @@
                         {
                             "id": "test"
                         },
+                        "test_well",
                         "wsi_test.ome.tif:md5,64b2939e7185c68bdfa53f52c38a5f64"
                     ]
                 ],
@@ -30,7 +32,7 @@
             "nf-test": "0.9.2",
             "nextflow": "24.10.5"
         },
-        "timestamp": "2025-05-01T00:18:25.2804167"
+        "timestamp": "2025-05-17T16:54:13.995521142"
     },
     "preprocess -  stub": {
         "content": [
@@ -40,7 +42,7 @@
                         {
                             "id": "test"
                         },
-                        "stub_test.ome.tif:md5,d41d8cd98f00b204e9800998ecf8427e"
+                        "Image:0.tif:md5,d41d8cd98f00b204e9800998ecf8427e"
                     ]
                 ],
                 "1": [
@@ -51,7 +53,7 @@
                         {
                             "id": "test"
                         },
-                        "stub_test.ome.tif:md5,d41d8cd98f00b204e9800998ecf8427e"
+                        "Image:0.tif:md5,d41d8cd98f00b204e9800998ecf8427e"
                     ]
                 ],
                 "versions": [
@@ -63,7 +65,7 @@
             "nf-test": "0.9.2",
             "nextflow": "24.10.5"
         },
-        "timestamp": "2025-04-28T23:14:23.267661797"
+        "timestamp": "2025-06-03T15:35:46.276660283"
     },
     "preprocess - hcs - decon": {
         "content": [
@@ -106,6 +108,7 @@
                         {
                             "id": "test"
                         },
+                        "test_well",
                         "wsi_test.ome.tif:md5,61b6738415d328a66b9d2780926a4f5f"
                     ]
                 ],
@@ -117,6 +120,7 @@
                         {
                             "id": "test"
                         },
+                        "test_well",
                         "wsi_test.ome.tif:md5,61b6738415d328a66b9d2780926a4f5f"
                     ]
                 ],
@@ -129,7 +133,7 @@
             "nf-test": "0.9.2",
             "nextflow": "24.10.5"
         },
-        "timestamp": "2025-04-29T22:32:47.178621906"
+        "timestamp": "2025-05-17T16:57:05.716168694"
     },
     "preprocess - hcs - decon_10": {
         "content": [
@@ -137,9 +141,9 @@
                 "0": [
                     [
                         {
-                            "id": "test"
+                            "id": "hcs"
                         },
-                        "hcs_test.ome.tif:md5,7ede09929402e5198f35f174b1337761"
+                        "Image:10.tif:md5,83d7b9c90ebe60aa9f6cebaeac88c9ae"
                     ]
                 ],
                 "1": [
@@ -148,9 +152,9 @@
                 "fovs": [
                     [
                         {
-                            "id": "test"
+                            "id": "hcs"
                         },
-                        "hcs_test.ome.tif:md5,7ede09929402e5198f35f174b1337761"
+                        "Image:10.tif:md5,83d7b9c90ebe60aa9f6cebaeac88c9ae"
                     ]
                 ],
                 "versions": [
@@ -162,7 +166,7 @@
             "nf-test": "0.9.2",
             "nextflow": "24.10.5"
         },
-        "timestamp": "2025-05-01T00:12:51.900334738"
+        "timestamp": "2025-06-03T15:31:23.405421255"
     },
     "preprocess - hcs - decon_100": {
         "content": [
@@ -172,6 +176,7 @@
                         {
                             "id": "test"
                         },
+                        "test_well",
                         "hcs_test.ome.tif:md5,ff1b5c3fd591a9ad1e4dd0de65557ef1"
                     ]
                 ],
@@ -183,6 +188,7 @@
                         {
                             "id": "test"
                         },
+                        "test_well",
                         "hcs_test.ome.tif:md5,ff1b5c3fd591a9ad1e4dd0de65557ef1"
                     ]
                 ],
@@ -195,7 +201,40 @@
             "nf-test": "0.9.2",
             "nextflow": "24.10.5"
         },
-        "timestamp": "2025-05-01T00:16:46.560850707"
+        "timestamp": "2025-05-17T16:52:40.926271686"
+    },
+    "preprocess - hcs - no_decon": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "test"
+                        },
+                        "Image:10.tif:md5,83d7b9c90ebe60aa9f6cebaeac88c9ae"
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,7532d207df3aa8c97abafc64c9788d28"
+                ],
+                "fovs": [
+                    [
+                        {
+                            "id": "test"
+                        },
+                        "Image:10.tif:md5,83d7b9c90ebe60aa9f6cebaeac88c9ae"
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,7532d207df3aa8c97abafc64c9788d28"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-06-03T15:35:37.378475228"
     },
     "preprocess - wsi - decon_10": {
         "content": [
@@ -205,7 +244,7 @@
                         {
                             "id": "test"
                         },
-                        "wsi_test.ome.tif:md5,64b2939e7185c68bdfa53f52c38a5f64"
+                        "Image:2.tif:md5,61b6738415d328a66b9d2780926a4f5f"
                     ]
                 ],
                 "1": [
@@ -216,7 +255,7 @@
                         {
                             "id": "test"
                         },
-                        "wsi_test.ome.tif:md5,64b2939e7185c68bdfa53f52c38a5f64"
+                        "Image:2.tif:md5,61b6738415d328a66b9d2780926a4f5f"
                     ]
                 ],
                 "versions": [
@@ -228,7 +267,7 @@
             "nf-test": "0.9.2",
             "nextflow": "24.10.5"
         },
-        "timestamp": "2025-05-01T00:14:27.173635855"
+        "timestamp": "2025-06-03T15:32:37.88297373"
     },
     "preprocess - wsi - decon": {
         "content": [
@@ -271,6 +310,7 @@
                         {
                             "id": "test"
                         },
+                        "test_well",
                         "hcs_test.ome.tif:md5,83d7b9c90ebe60aa9f6cebaeac88c9ae"
                     ]
                 ],
@@ -282,6 +322,7 @@
                         {
                             "id": "test"
                         },
+                        "test_well",
                         "hcs_test.ome.tif:md5,83d7b9c90ebe60aa9f6cebaeac88c9ae"
                     ]
                 ],
@@ -294,6 +335,6 @@
             "nf-test": "0.9.2",
             "nextflow": "24.10.5"
         },
-        "timestamp": "2025-04-29T22:31:13.859488732"
+        "timestamp": "2025-05-17T16:55:50.056537801"
     }
 }

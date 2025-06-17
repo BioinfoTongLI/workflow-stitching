@@ -5,14 +5,24 @@
     "https://github.com/cellgeni/nf-modules.git": {
       "modules": {
         "sanger": {
+          "imaging/ashlarcompanion": {
+            "branch": "main",
+            "git_sha": "cd8c9159772ae3da999ade5df796ab67bc916c54",
+            "installed_by": ["modules"]
+          },
           "imaging/generatecompanion": {
             "branch": "main",
-            "git_sha": "46847f823318e98e7db45030a2f46a323422e59c",
+            "git_sha": "604d1244aed080d1c540d1d0c90d00f2d415f5b9",
             "installed_by": ["preprocess_tiles"]
+          },
+          "imaging/parsemanifest": {
+            "branch": "main",
+            "git_sha": "a79a64a08146c83f662de0c9cc65195313a41590",
+            "installed_by": ["modules"]
           },
           "imaging/preprocess": {
             "branch": "main",
-            "git_sha": "859be9212fa70de47352e0bb158e8a2e47ad0edc",
+            "git_sha": "802dc6e6d53d7a085f5cee5ca62bce40f5325895",
             "installed_by": ["preprocess_tiles"]
           }
         }
@@ -21,7 +31,7 @@
         "sanger": {
           "preprocess_tiles": {
             "branch": "main",
-            "git_sha": "73f195c439f0663bb6068591d2a69e1e4d5724e1",
+            "git_sha": "f41e6a4ffc09c265188568e5fab71cb25f50ead3",
             "installed_by": ["subworkflows"]
           }
         }
@@ -32,7 +42,7 @@
         "nf-core": {
           "ashlar": {
             "branch": "master",
-            "git_sha": "81880787133db07d9b4c1febd152c090eb8325dc",
+            "git_sha": "e2684f20ddc22b76879d4d9afdf12180036c6ca0",
             "installed_by": ["modules"]
           }
         }

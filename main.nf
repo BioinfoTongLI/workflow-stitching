@@ -1,28 +1,37 @@
-include { ASHLAR_RUN; PREPROCESS_TILES_ASHLAR_STITCH } from './workflows/main'
+include { ASHLAR_RUN ; PREPROCESS_TILES_ASHLAR_STITCH } from './workflows/main'
 
-
-params.images = [
-    [
-        ["id": "scilifelab"],
-        [
-            "/lustre/scratch127/cellgen/cellgeni/tickets/tic-3694/NBC_exp01/OME_tiffs/Base_1.ome.tiff",
-            "/lustre/scratch127/cellgen/cellgeni/tickets/tic-3694/NBC_exp01/OME_tiffs/Base_2.ome.tiff",
-            "/lustre/scratch127/cellgen/cellgeni/tickets/tic-3694/NBC_exp01/OME_tiffs/Base_3.ome.tiff",
-            "/lustre/scratch127/cellgen/cellgeni/tickets/tic-3694/NBC_exp01/OME_tiffs/Base_4.ome.tiff",
-            "/lustre/scratch127/cellgen/cellgeni/tickets/tic-3694/NBC_exp01/OME_tiffs/Base_5.ome.tiff",
-        ]
-    ],
-]
+params.manifest = "/home/ubuntu/Documents/workflow-stitching/manifest.csv"
+params.dfp_folder = []
+params.ffp_folder = []
+params.psf_folder = []
 
 workflow {
-    ASHLAR_RUN(Channel.from(params.images), [], [])
+    images = file(params.manifest)
+        .splitCsv(header: true, sep: ',')
+        .map { row ->
+            [
+                ['id': row.id],
+                file(row.root_folder, checkIfExists: true),
+            ]
+        }
+    ASHLAR_RUN(images, params.dfp_folder, params.ffp_folder)
 }
 
 workflow PREPROCESS_TILES_ASHLAR {
+    images = channel
+        .fromPath(params.manifest)
+        .splitCsv(header: true, sep: ',')
+        .map { row ->
+            [
+                ['id': row.id],
+                row.round,
+                file(row.root_folder, checkIfExists: true),
+            ]
+        }
     PREPROCESS_TILES_ASHLAR_STITCH(
-        Channel.from(params.images),
-        "",
-        "",
-        "/lustre/scratch127/cellgen/cellgeni/projects/imaging_PSFs/",
+        images,
+        params.dfp_folder,
+        params.ffp_folder,
+        params.psf_folder,
     )
 }

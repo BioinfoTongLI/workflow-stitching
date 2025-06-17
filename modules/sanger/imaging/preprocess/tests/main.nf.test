@@ -20,12 +20,12 @@ nextflow_process {
             process {
                 """
                 input[0] = [
-                    [ id:'test' ], // meta map
-                    10, 
+                    [ id:'hcs' ], // meta map
                     file(params.modules_testdata_base_path + '/TL_STP/TL_STP_RVT-HFF-20220623__2022-06-24T13_50_10-Measurement 1/Images', checkIfExists: true),
-                    "hcs_test"
+                    "Image:10",
+                    10 
                 ]
-                input[1] = file('/lustre/scratch127/cellgen/cellgeni/projects/imaging_PSFs/', checkIfExists: true)
+                input[1] = file('s3://spatial_demo_datasets/PSFs/', checkIfExists: true)
                 """
             }
         }
@@ -48,11 +48,11 @@ nextflow_process {
                 """
                 input[0] = [
                     [ id:'test' ], // meta map
-                    2,
                     file(params.modules_testdata_base_path + '/QC/beadplatetest__2021-02-17T16_03_59-Measurement 1/Images', checkIfExists: true),
-                    "wsi_test"
+                    "Image:2",
+                    2
                 ]
-                input[1] = file('/lustre/scratch127/cellgen/cellgeni/projects/imaging_PSFs/', checkIfExists: true)
+                input[1] = file('s3://spatial_demo_datasets/PSFs/', checkIfExists: true)
                 """
             }
         }
@@ -65,7 +65,8 @@ nextflow_process {
         }
     }
 
-    test("preprocess - hcs - decon_100") {
+
+    test("preprocess - hcs - no_decon") {
 
         when {
             params {
@@ -75,63 +76,9 @@ nextflow_process {
                 """
                 input[0] = [
                     [ id:'test' ], // meta map
-                    10, 
                     file(params.modules_testdata_base_path + '/TL_STP/TL_STP_RVT-HFF-20220623__2022-06-24T13_50_10-Measurement 1/Images', checkIfExists: true),
-                    "hcs_test"
-                ]
-                input[1] = file('/lustre/scratch127/cellgen/cellgeni/projects/imaging_PSFs/', checkIfExists: true)
-                """
-            }
-        }
-
-        then {
-            assertAll(
-                { assert process.success },
-                { assert snapshot(process.out).match() }
-            )
-        }
-    }
-
-    test("preprocess - wsi - decon_100") {
-
-        when {
-            params {
-                module_args = "--master_file Index.idx.xml"
-            }
-            process {
-                """
-                input[0] = [
-                    [ id:'test' ], // meta map
-                    2,
-                    file(params.modules_testdata_base_path + '/QC/beadplatetest__2021-02-17T16_03_59-Measurement 1/Images', checkIfExists: true),
-                    "wsi_test"
-                ]
-                input[1] = file('/lustre/scratch127/cellgen/cellgeni/projects/imaging_PSFs/', checkIfExists: true)
-                """
-            }
-        }
-
-        then {
-            assertAll(
-                { assert process.success },
-                { assert snapshot(process.out).match() }
-            )
-        }
-    }
-
-    test("preprocess - hcs") {
-
-        when {
-            params {
-                module_args = "--master_file Index.xml"
-            }
-            process {
-                """
-                input[0] = [
-                    [ id:'test' ], // meta map
-                    10, 
-                    file(params.modules_testdata_base_path + '/TL_STP/TL_STP_RVT-HFF-20220623__2022-06-24T13_50_10-Measurement 1/Images', checkIfExists: true),
-                    "hcs_test"
+                    "Image:10",
+                    10 
                 ]
                 input[1] = []
                 """
@@ -146,32 +93,6 @@ nextflow_process {
         }
     }
 
-    test("preprocess - wsi") {
-
-        when {
-            params {
-                module_args = "--master_file Index.idx.xml"
-            }
-            process {
-                """
-                input[0] = [
-                    [ id:'test' ], // meta map
-                    2,
-                    file(params.modules_testdata_base_path + '/QC/beadplatetest__2021-02-17T16_03_59-Measurement 1/Images', checkIfExists: true),
-                    "wsi_test"
-                ]
-                input[1] = []
-                """
-            }
-        }
-
-        then {
-            assertAll(
-                { assert process.success },
-                { assert snapshot(process.out).match() }
-            )
-        }
-    }
 
     test("preprocess -  stub") {
 
@@ -186,9 +107,9 @@ nextflow_process {
                 """
                 input[0] = [
                     [ id:'test' ], // meta map
-                    0,
                     file(params.modules_testdata_base_path + '', checkIfExists: true),
-                    "stub_test"
+                    "Image:0",
+                    0
                 ]
                 input[1] = []
                 """

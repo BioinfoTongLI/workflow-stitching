@@ -1,9 +1,10 @@
-
 include { ASHLAR } from '../modules/nf-core/ashlar/main'
 include { PREPROCESS_TILES } from '../subworkflows/sanger/preprocess_tiles/main'
+include { IMAGING_ASHLARCOMPANION } from '../modules/sanger/imaging/ashlarcompanion/main'
+include { IMAGING_PARSEMANIFEST } from '../modules/sanger/imaging/parsemanifest/main'
 
 
-workflow ASHLAR_RUN{
+workflow ASHLAR_RUN {
     take:
     images
     dfp_folder
@@ -25,8 +26,19 @@ workflow PREPROCESS_TILES_ASHLAR_STITCH {
 
     main:
     PREPROCESS_TILES(images_ch, psf_folder)
-    ASHLAR(PREPROCESS_TILES.out.processed_tiles, dfp_folder, ffp_folder)
+    multi_cycle_images = PREPROCESS_TILES.out.companion_tiles
+        .groupTuple(by: 0)
+        .map { meta, companions, images ->
+            [meta, companions, images.flatten().unique()]
+        }
+
+    IMAGING_ASHLARCOMPANION(
+        multi_cycle_images,
+        dfp_folder,
+        ffp_folder,
+        params.is_plate ?: false,
+    )
 
     emit:
-    ASHLAR.out.tif
+    IMAGING_ASHLARCOMPANION.out.tif
 }

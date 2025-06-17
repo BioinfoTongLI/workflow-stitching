@@ -5,40 +5,72 @@ import fire
 from aicsimageio import AICSImage
 import numpy as np
 from ome_types import to_xml
+from ome_types.model import TiffData
 import pandas as pd
 import os
+import uuid
 
 
-def main(file_with_ome_md, tiles_csv, companion_xml, master_file="Index.idx.xml"):
+def generate_tiles_to_process_csv(img_obj: AICSImage, prefix: str):
+    """
+    Generate a CSV file with the tiles to process.
+    """
+    df = pd.DataFrame(
+        {
+            "image_id": [
+                prefix + "_" + img_obj.metadata.images[i].id
+                for i in np.arange(len(img_obj.scenes))
+            ]
+        }
+    )
+    df["index"] = np.arange(len(img_obj.scenes))
+    return df
+
+
+def append_tiffdata_to_ome_metadata(
+    img_obj: AICSImage,
+    index: int,
+    prefix: str,
+):
+    """
+    Append TiffData to the OME metadata.
+    """
+    current_image = img_obj.ome_metadata.images[index]
+    filename = prefix + "_" + current_image.id + ".tif"
+    tiff_uuid = TiffData.UUID(value=f"urn:uuid:{uuid.uuid4()}", file_name=filename)
+    tiff = TiffData(first_c=0, first_t=0, first_z=0, uuid=tiff_uuid)
+    img_obj.ome_metadata.images[index].pixels.tiff_data_blocks.append(tiff)
+
+
+def main(
+    image_root_folder, tiles_csv, companion_xml, prefix, master_file="Index.idx.xml"
+):
     """
     Generate a companion file for a given image file.
     """
-    img = AICSImage(f"{file_with_ome_md}/{master_file}")
-    absolute_path = os.path.realpath(file_with_ome_md)
-    ome_str = to_xml(img.metadata)
-    df = pd.DataFrame(
-        {
-            "image_id" : [img.metadata.images[i].id for i in np.arange(len(img.scenes))]
-        }
-    )
-    df["root_xml"] = absolute_path
-    df["index"] = np.arange(len(img.scenes))
+    img = AICSImage(f"{image_root_folder}/{master_file}")
+    df = generate_tiles_to_process_csv(img, prefix)
+    df["root_xml"] = os.path.realpath(image_root_folder)
+    df.to_csv(f"{tiles_csv}", index=False)
 
-    df.to_csv(tiles_csv, index=False)
+    for i in np.arange(len(img.scenes)):
+        append_tiffdata_to_ome_metadata(img, i, prefix)
 
     # Save the OME metadata as an XML file
-    with open(companion_xml, "w") as xml_file:
-        xml_file.write(ome_str)
+    with open(f"{companion_xml}", "w") as xml_file:
+        xml_file.write(to_xml(img.ome_metadata))
+
 
 def version():
     """
     Print the version of the script.
     """
-    return "0.1.0"
+    return "0.2.0"
+
 
 if __name__ == "__main__":
     options = {
-        "run" : main,
-        "version" : version,
+        "run": main,
+        "version": version,
     }
     fire.Fire(options)

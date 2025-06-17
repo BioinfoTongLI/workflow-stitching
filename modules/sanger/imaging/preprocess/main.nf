@@ -1,32 +1,32 @@
 process IMAGING_PREPROCESS {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
     container "quay.io/cellgeni/clij2:0.28"
 
     input:
-    tuple val(meta), val(index), path(root_folder), val(image_id)
-    path(psf_folder, stageAs: 'psfs')
+    tuple val(meta), path(root_folder), val(image_id), val(index)
+    path psf_folder, stageAs: 'psfs'
 
     output:
     tuple val(meta), path("${out_img_name}"), emit: fovs
-    path "versions.yml"           , emit: versions
+    path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    out_img_name = "${image_id}.ome.tif"
+    // def prefix = task.ext.prefix ?: "${meta.id}"
+    out_img_name = "${image_id}.tif"
     """
     process.py run \\
         --root_folder ${root_folder} \\
         --index ${index} \\
         --out_img_name ${out_img_name} \\
         --psf_folder ${psf_folder} \\
-        $args
+        ${args}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -37,7 +37,7 @@ process IMAGING_PREPROCESS {
     stub:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    out_img_name = "${image_id}.ome.tif"
+    out_img_name = "${image_id}.tif"
     """
     touch ${out_img_name}
 
