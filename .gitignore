@@ -18,3 +18,5 @@ single_tsvs/
 *.html
 *.tif
 results/
+.vscode
+.nextflow
