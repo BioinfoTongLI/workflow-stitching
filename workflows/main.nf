@@ -3,6 +3,7 @@ include { PREPROCESS_TILES } from '../subworkflows/sanger/preprocess_tiles/main'
 include { IMAGING_ASHLARCOMPANION } from '../modules/sanger/imaging/ashlarcompanion/main'
 include { IMAGING_PARSEMANIFEST } from '../modules/sanger/imaging/parsemanifest/main'
 
+params.is_plate = null
 
 workflow ASHLAR_RUN {
     take:
@@ -29,7 +30,12 @@ workflow PREPROCESS_TILES_ASHLAR_STITCH {
     multi_cycle_images = PREPROCESS_TILES.out.companion_tiles
         .groupTuple(by: 0)
         .map { meta, companions, images ->
-            [meta, companions, images.flatten().unique()]
+            def sorted_companions = companions.sort { a, b ->
+                def num_a = (a =~ /image(\d+)/)[0][1] as Integer
+                def num_b = (b =~ /image(\d+)/)[0][1] as Integer
+                num_a <=> num_b
+            }
+            [meta, sorted_companions, images.flatten().unique()]
         }
 
     IMAGING_ASHLARCOMPANION(
