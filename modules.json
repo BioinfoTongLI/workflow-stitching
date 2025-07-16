@@ -4,7 +4,7 @@
   "repos": {
     "https://github.com/cellgeni/nf-modules.git": {
       "modules": {
-        "sanger": {
+        "sanger-cellgeni": {
           "imaging/ashlarcompanion": {
             "branch": "main",
             "git_sha": "cd8c9159772ae3da999ade5df796ab67bc916c54",
@@ -12,7 +12,7 @@
           },
           "imaging/generatecompanion": {
             "branch": "main",
-            "git_sha": "604d1244aed080d1c540d1d0c90d00f2d415f5b9",
+            "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
             "installed_by": ["preprocess_tiles"]
           },
           "imaging/parsemanifest": {
@@ -22,16 +22,16 @@
           },
           "imaging/preprocess": {
             "branch": "main",
-            "git_sha": "802dc6e6d53d7a085f5cee5ca62bce40f5325895",
+            "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
             "installed_by": ["preprocess_tiles"]
           }
         }
       },
       "subworkflows": {
-        "sanger": {
+        "sanger-cellgeni": {
           "preprocess_tiles": {
             "branch": "main",
-            "git_sha": "f41e6a4ffc09c265188568e5fab71cb25f50ead3",
+            "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
             "installed_by": ["subworkflows"]
           }
         }

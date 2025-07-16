@@ -1,7 +1,7 @@
 include { ASHLAR } from '../modules/nf-core/ashlar/main'
-include { PREPROCESS_TILES } from '../subworkflows/sanger/preprocess_tiles/main'
-include { IMAGING_ASHLARCOMPANION } from '../modules/sanger/imaging/ashlarcompanion/main'
-include { IMAGING_PARSEMANIFEST } from '../modules/sanger/imaging/parsemanifest/main'
+include { PREPROCESS_TILES } from '../subworkflows/sanger-cellgeni/preprocess_tiles/main'
+include { IMAGING_ASHLARCOMPANION } from '../modules/sanger-cellgeni/imaging/ashlarcompanion/main'
+include { IMAGING_PARSEMANIFEST } from '../modules/sanger-cellgeni/imaging/parsemanifest/main'
 
 params.is_plate = null
 
