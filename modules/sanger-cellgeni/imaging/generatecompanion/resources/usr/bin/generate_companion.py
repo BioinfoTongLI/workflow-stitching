@@ -18,7 +18,7 @@ def generate_tiles_to_process_csv(img_obj: AICSImage, prefix: str):
     df = pd.DataFrame(
         {
             "image_id": [
-                prefix + "_" + img_obj.metadata.images[i].id
+                prefix + "_" + img_obj.ome_metadata.images[i].id
                 for i in np.arange(len(img_obj.scenes))
             ]
         }
