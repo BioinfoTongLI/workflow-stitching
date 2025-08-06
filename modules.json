@@ -12,7 +12,7 @@
           },
           "imaging/generatecompanion": {
             "branch": "main",
-            "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
+            "git_sha": "ef3e238d9d6b55cc10b1173f272a9101c308bbb0",
             "installed_by": ["preprocess_tiles"]
           },
           "imaging/parsemanifest": {
@@ -22,7 +22,7 @@
           },
           "imaging/preprocess": {
             "branch": "main",
-            "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
+            "git_sha": "1ab9b0dfc7737f420722a552b21f090584eaa536",
             "installed_by": ["preprocess_tiles"]
           }
         }
