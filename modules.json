@@ -15,6 +15,11 @@
             "git_sha": "ef3e238d9d6b55cc10b1173f272a9101c308bbb0",
             "installed_by": ["preprocess_tiles"]
           },
+          "imaging/generatecompanionfromfiles": {
+            "branch": "main",
+            "git_sha": "d5a21b4109261386f6f5cc35fd8c035201d795aa",
+            "installed_by": ["modules"]
+          },
           "imaging/parsemanifest": {
             "branch": "main",
             "git_sha": "a79a64a08146c83f662de0c9cc65195313a41590",
