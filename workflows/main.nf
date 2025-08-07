@@ -2,6 +2,7 @@ include { ASHLAR } from '../modules/nf-core/ashlar/main'
 include { PREPROCESS_TILES } from '../subworkflows/sanger-cellgeni/preprocess_tiles/main'
 include { IMAGING_ASHLARCOMPANION } from '../modules/sanger-cellgeni/imaging/ashlarcompanion/main'
 include { IMAGING_PARSEMANIFEST } from '../modules/sanger-cellgeni/imaging/parsemanifest/main'
+include { IMAGING_GENERATECOMPANIONFROMFILES } from '../modules/sanger-cellgeni/imaging/generatecompanionfromfiles/main'
 
 params.is_plate = null
 
@@ -45,6 +46,11 @@ workflow PREPROCESS_TILES_ASHLAR_STITCH {
         params.is_plate ?: false,
     )
 
+    IMAGING_GENERATECOMPANIONFROMFILES(
+        IMAGING_ASHLARCOMPANION.out.tif.combine(channel.of(["*.ome.tif"]))
+    )
+
     emit:
-    IMAGING_ASHLARCOMPANION.out.tif
+    // IMAGING_ASHLARCOMPANION.out.tif
+    IMAGING_GENERATECOMPANIONFROMFILES.out.companion
 }
