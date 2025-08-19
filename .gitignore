@@ -14,4 +14,10 @@ tsvs/
 ymls/
 Epithelial*
 single_tsvs/
+*.tsv
+*.html
+*.tif
+results/
 .vscode
+.nextflow
+manifest*
