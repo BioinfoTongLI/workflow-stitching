@@ -1,0 +1,3 @@
+Name	RegPC	RegChN	ExpPC	ExpChN
+DAPI	1	0	1	0
+a647	2	0	2	0

@@ -12,8 +12,6 @@ __pycache__*
 
 tsvs/
 ymls/
-Epithelial*
-single_tsvs/
 *.tsv
 *.html
 *.tif
