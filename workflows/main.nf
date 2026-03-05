@@ -3,6 +3,7 @@ include { PREPROCESS_TILES } from '../subworkflows/sanger-cellgeni/preprocess_ti
 include { IMAGING_ASHLARCOMPANION } from '../modules/sanger-cellgeni/imaging/ashlarcompanion/main'
 include { IMAGING_PARSEMANIFEST } from '../modules/sanger-cellgeni/imaging/parsemanifest/main'
 include { IMAGING_GENERATECOMPANIONFROMFILES } from '../modules/sanger-cellgeni/imaging/generatecompanionfromfiles/main'
+include { BIOFORMATS2RAWCOMPANION } from '../modules/sanger-cellgeni/bioformats2rawcompanion/main'
 
 params.is_plate = null
 
@@ -49,6 +50,9 @@ workflow PREPROCESS_TILES_ASHLAR_STITCH {
     IMAGING_GENERATECOMPANIONFROMFILES(
         IMAGING_ASHLARCOMPANION.out.tif.combine(channel.of(["*.ome.tif"]))
     )
+
+    ch_to_ome_zarr = IMAGING_GENERATECOMPANIONFROMFILES.out.companion.combine(IMAGING_ASHLARCOMPANION.out.tif, by: 0)
+    BIOFORMATS2RAWCOMPANION(ch_to_ome_zarr)
 
     emit:
     // IMAGING_ASHLARCOMPANION.out.tif
