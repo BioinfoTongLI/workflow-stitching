@@ -4,6 +4,7 @@ include { IMAGING_ASHLARCOMPANION } from '../modules/sanger-cellgeni/imaging/ash
 include { IMAGING_PARSEMANIFEST } from '../modules/sanger-cellgeni/imaging/parsemanifest/main'
 include { IMAGING_GENERATECOMPANIONFROMFILES } from '../modules/sanger-cellgeni/imaging/generatecompanionfromfiles/main'
 include { BIOFORMATS2RAWCOMPANION } from '../modules/sanger-cellgeni/bioformats2rawcompanion/main'
+include { PREPROCESS_OME_ZARR_TILES } from '../subworkflows/sanger-cellgeni/preprocess_ome_zarr_tiles/main'
 
 params.is_plate = null
 
@@ -20,16 +21,16 @@ workflow ASHLAR_RUN {
     ASHLAR.out.tif
 }
 
-workflow PREPROCESS_TILES_ASHLAR_STITCH {
+workflow PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH {
     take:
-    images_ch // channel: [ val(meta), [ imaging_experiment ] ]
+    images_ch // channel: [ val(meta), val(round_index), [ imaging_experiment ] ]
     dfp_folder
     ffp_folder
     psf_folder
 
     main:
-    PREPROCESS_TILES(images_ch, psf_folder)
-    multi_cycle_images = PREPROCESS_TILES.out.companion_tiles
+    PREPROCESS_OME_ZARR_TILES(images_ch, psf_folder)
+    multi_cycle_images = PREPROCESS_OME_ZARR_TILES.out.companion_tiles
         .groupTuple(by: 0)
         .map { meta, companions, images ->
             def sorted_companions = companions.sort { a, b ->
