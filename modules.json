@@ -12,13 +12,13 @@
           },
           "imaging/ashlarcompanion": {
             "branch": "main",
-            "git_sha": "cd8c9159772ae3da999ade5df796ab67bc916c54",
+            "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
             "installed_by": ["modules"]
           },
           "imaging/generatecompanion": {
             "branch": "develop",
-            "git_sha": "45c25ab87fd5a3d2243b20a1e06fc34835c74a59",
-            "installed_by": ["preprocess_tiles"]
+            "git_sha": "9b788a0f973271950282a214d15c8730146b351e",
+            "installed_by": ["preprocess_ome_zarr_tiles", "preprocess_tiles"]
           },
           "imaging/generatecompanionfromfiles": {
             "branch": "main",
@@ -27,18 +27,28 @@
           },
           "imaging/parsemanifest": {
             "branch": "main",
-            "git_sha": "a79a64a08146c83f662de0c9cc65195313a41590",
+            "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
             "installed_by": ["modules"]
           },
           "imaging/preprocess": {
             "branch": "develop",
             "git_sha": "45c25ab87fd5a3d2243b20a1e06fc34835c74a59",
             "installed_by": ["preprocess_tiles"]
+          },
+          "omezarr/preprocess": {
+            "branch": "develop",
+            "git_sha": "afe2f6e6199152267817c680a1d83804d74a2cd7",
+            "installed_by": ["preprocess_ome_zarr_tiles"]
           }
         }
       },
       "subworkflows": {
         "sanger-cellgeni": {
+          "preprocess_ome_zarr_tiles": {
+            "branch": "develop",
+            "git_sha": "1fe013085df56e5a1b2157aa044001965d68e7c0",
+            "installed_by": ["subworkflows"]
+          },
           "preprocess_tiles": {
             "branch": "develop",
             "git_sha": "45c25ab87fd5a3d2243b20a1e06fc34835c74a59",
@@ -52,7 +62,7 @@
         "nf-core": {
           "ashlar": {
             "branch": "master",
-            "git_sha": "e2684f20ddc22b76879d4d9afdf12180036c6ca0",
+            "git_sha": "7e59ce4c7009b22ba63bca8a92da70bd0e5008d9",
             "installed_by": ["modules"]
           }
         }
