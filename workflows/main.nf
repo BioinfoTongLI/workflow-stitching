@@ -3,7 +3,7 @@ include { PREPROCESS_TILES } from '../subworkflows/sanger-cellgeni/preprocess_ti
 include { IMAGING_ASHLARCOMPANION } from '../modules/sanger-cellgeni/imaging/ashlarcompanion/main'
 include { IMAGING_PARSEMANIFEST } from '../modules/sanger-cellgeni/imaging/parsemanifest/main'
 include { IMAGING_GENERATECOMPANIONFROMFILES } from '../modules/sanger-cellgeni/imaging/generatecompanionfromfiles/main'
-include { BIOFORMATS2RAWCOMPANION } from '../modules/sanger-cellgeni/bioformats2rawcompanion/main'
+include { BIOFORMATS2RAWCOMPANION as BF2RAW_FINAL ; BIOFORMATS2RAWCOMPANION as BF2RAW_INIT } from '../modules/sanger-cellgeni/bioformats2rawcompanion/main'
 include { PREPROCESS_OME_ZARR_TILES } from '../subworkflows/sanger-cellgeni/preprocess_ome_zarr_tiles/main'
 
 params.is_plate = null
@@ -29,7 +29,12 @@ workflow PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH {
     psf_folder
 
     main:
-    PREPROCESS_OME_ZARR_TILES(images_ch, psf_folder)
+    BF2RAW_INIT(images_ch)
+
+    PREPROCESS_OME_ZARR_TILES(
+        BF2RAW_INIT.out.ome_zarr.map { meta, zarr -> [meta, meta.round_index, zarr, null] },
+        psf_folder,
+    )
     multi_cycle_images = PREPROCESS_OME_ZARR_TILES.out.companion_tiles
         .groupTuple(by: 0)
         .map { meta, companions, images ->
@@ -40,7 +45,7 @@ workflow PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH {
             }
             [meta, sorted_companions, images.flatten().unique()]
         }
-
+    // multi_cycle_images.view()
     IMAGING_ASHLARCOMPANION(
         multi_cycle_images,
         dfp_folder,
@@ -53,9 +58,9 @@ workflow PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH {
     )
 
     ch_to_ome_zarr = IMAGING_GENERATECOMPANIONFROMFILES.out.companion.combine(IMAGING_ASHLARCOMPANION.out.tif, by: 0)
-    BIOFORMATS2RAWCOMPANION(ch_to_ome_zarr)
+    BF2RAW_FINAL(ch_to_ome_zarr)
 
     emit:
-    // IMAGING_ASHLARCOMPANION.out.tif
-    IMAGING_GENERATECOMPANIONFROMFILES.out.companion
+    companion = IMAGING_GENERATECOMPANIONFROMFILES.out.companion
+    zarr = BF2RAW_FINAL.out.ome_zarr
 }

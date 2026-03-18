@@ -22,10 +22,9 @@ workflow PREPROCESS_OME_ZARR_TILES_ASHLAR {
         .splitCsv(header: true, sep: ',')
         .map { row ->
             [
-                ['id': row.id],
-                row.round,
-                file(row.ome_zarr_plate, checkIfExists: true),
-                null,
+                [id: row.id, round_index: row.round_index],
+                file(row.master_file, checkIfExists: true),
+                file(row.master_file, checkIfExists: true).parent,
             ]
         }
     PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH(
