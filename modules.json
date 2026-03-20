@@ -37,7 +37,7 @@
           },
           "omezarr/preprocess": {
             "branch": "develop",
-            "git_sha": "afe2f6e6199152267817c680a1d83804d74a2cd7",
+            "git_sha": "09a5ccdf7cfc9b5dedeb33885bcffb5fa9eb5607",
             "installed_by": ["preprocess_ome_zarr_tiles"]
           }
         }
