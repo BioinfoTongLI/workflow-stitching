@@ -36,6 +36,11 @@ workflow PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH {
         psf_folder,
     )
     multi_cycle_images = PREPROCESS_OME_ZARR_TILES.out.companion_tiles
+        .map { meta, companions, image ->
+            def newMeta = meta.clone()
+            newMeta.remove('round_index')
+            [newMeta, companions, image]
+        }
         .groupTuple(by: 0)
         .map { meta, companions, images ->
             def sorted_companions = companions.sort { a, b ->
