@@ -63,9 +63,7 @@ workflow PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH {
     )
 
     ch_to_ome_zarr = IMAGING_GENERATECOMPANIONFROMFILES.out.companion.combine(IMAGING_ASHLARCOMPANION.out.tif, by: 0)
-    BF2RAW_FINAL(ch_to_ome_zarr)
 
     emit:
     companion = IMAGING_GENERATECOMPANIONFROMFILES.out.companion
-    zarr = BF2RAW_FINAL.out.ome_zarr
 }
