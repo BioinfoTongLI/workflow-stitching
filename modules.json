@@ -39,6 +39,11 @@
             "branch": "develop",
             "git_sha": "09a5ccdf7cfc9b5dedeb33885bcffb5fa9eb5607",
             "installed_by": ["preprocess_ome_zarr_tiles"]
+          },
+          "pe2ometif": {
+            "branch": "develop",
+            "git_sha": "b74b662f8decafd014d9c9b9663b031d17d73b5d",
+            "installed_by": ["modules"]
           }
         }
       },
