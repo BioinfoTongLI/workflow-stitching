@@ -2,7 +2,7 @@ include { ASHLAR_RUN ; PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH } from './workflo
 include { IMAGING_ASHLARCOMPANION } from './modules/sanger-cellgeni/imaging/ashlarcompanion/main'
 include { PE2OMETIF } from './modules/sanger-cellgeni/pe2ometif/main'
 
-params.manifest = "/home/ubuntu/Documents/workflow-stitching/manifest.csv"
+params.manifest = null
 params.dfp_folder = []
 params.ffp_folder = []
 params.psf_folder = []
