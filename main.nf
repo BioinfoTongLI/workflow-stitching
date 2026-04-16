@@ -1,6 +1,7 @@
 include { ASHLAR_RUN ; PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH } from './workflows/main'
 include { IMAGING_ASHLARCOMPANION } from './modules/sanger-cellgeni/imaging/ashlarcompanion/main'
 include { PE2OMETIF } from './modules/sanger-cellgeni/pe2ometif/main'
+include { IMAGING_GENERATECOMPANIONFROMFILES } from './modules/sanger-cellgeni/imaging/generatecompanionfromfiles/main'
 
 params.manifest = null
 params.dfp_folder = []
@@ -54,5 +55,8 @@ workflow PREPROCESS_OME_ZARR_TILES_ASHLAR {
         params.dfp_folder,
         params.ffp_folder,
         params.is_plate ?: false,
+    )
+    IMAGING_GENERATECOMPANIONFROMFILES(
+        IMAGING_ASHLARCOMPANION.out.tif.combine(channel.of(["*.ome.tif"]))
     )
 }
