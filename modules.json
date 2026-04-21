@@ -21,8 +21,8 @@
             "installed_by": ["preprocess_ome_zarr_tiles", "preprocess_tiles"]
           },
           "imaging/generatecompanionfromfiles": {
-            "branch": "main",
-            "git_sha": "d5a21b4109261386f6f5cc35fd8c035201d795aa",
+            "branch": "develop",
+            "git_sha": "5cc4def70ca6ffc2143f3385b9926507b925b11c",
             "installed_by": ["modules"]
           },
           "imaging/parsemanifest": {
