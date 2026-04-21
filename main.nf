@@ -27,8 +27,8 @@ workflow PREPROCESS_TIFF_TILES_ASHLAR {
         .map { row ->
             [
                 [id: row.id, round_index: row.round_index as Integer],
-                file(row.master_file, checkIfExists: true).parent,
-                file(row.master_file, checkIfExists: true),
+                file(file(row.master_file, checkIfExists: true).parent),
+                file(row.master_file, checkIfExists: true).name,
             ]
         }
 
