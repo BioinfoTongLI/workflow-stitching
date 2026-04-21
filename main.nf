@@ -21,39 +21,35 @@ workflow {
     ASHLAR_RUN(images, params.dfp_folder, params.ffp_folder)
 }
 
-workflow PREPROCESS_OME_ZARR_TILES_ASHLAR {
+workflow PREPROCESS_TIFF_TILES_ASHLAR {
     images_ch = channel.fromPath(params.manifest)
         .splitCsv(header: true, sep: ',')
         .map { row ->
             [
                 [id: row.id, round_index: row.round_index as Integer],
+                file(row.master_file, checkIfExists: true).parent,
                 file(row.master_file, checkIfExists: true),
-                file(file(row.master_file, checkIfExists: true).parent + "/*tiff", checkIfExists: true),
             ]
         }
 
-    PE2OMETIF(
-        images_ch.map { meta, master, _images ->
-            [meta, master.parent, master.name]
-        }
-    )
+    PE2OMETIF(images_ch)
 
-    multi_cycle_images = PE2OMETIF.out.companion
-        .join(PE2OMETIF.out.ome_tif)
-        .map { meta, companion, images ->
-            [[id: meta.id], meta.round_index, companion, images]
+    multi_cycle_images = PE2OMETIF.out.ome_tif
+        .map { meta, images, companion ->
+            [[id: meta.id], meta.round_index, images, companion]
         }
         .groupTuple(by: 0)
-        .map { meta, round_indices, companions, images_list ->
-            def sorted = [round_indices, companions, images_list]
+        .map { meta, round_indices, images_list, companions ->
+            def sorted = [round_indices, images_list, companions]
                 .transpose()
                 .sort { a, b -> a[0] <=> b[0] }
             [[id: meta.id, round_index: meta.round_index], sorted.collect { row -> row[1] }, sorted.collect { row -> row[2] }.flatten()]
         }
+    multi_cycle_images.view()
     IMAGING_ASHLARCOMPANION(
         multi_cycle_images,
-        params.dfp_folder,
-        params.ffp_folder,
+        params.dfp_folder ?: [],
+        params.ffp_folder ?: [],
         params.is_plate ?: false,
     )
     IMAGING_GENERATECOMPANIONFROMFILES(
