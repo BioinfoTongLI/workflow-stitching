@@ -22,7 +22,7 @@
           },
           "imaging/generatecompanionfromfiles": {
             "branch": "develop",
-            "git_sha": "5cc4def70ca6ffc2143f3385b9926507b925b11c",
+            "git_sha": "ecb8c32831a36f6f92d115093bebdb0af55898cf",
             "installed_by": ["modules"]
           },
           "imaging/parsemanifest": {
@@ -42,7 +42,7 @@
           },
           "pe2ometif": {
             "branch": "develop",
-            "git_sha": "8485a31aaba29d8bf7ad8b5c70b1e8f3cc0181da",
+            "git_sha": "7cc87b2035507e588f5e42ed945b19e1207805bd",
             "installed_by": ["modules"]
           }
         }
