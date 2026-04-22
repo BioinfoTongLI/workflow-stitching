@@ -42,7 +42,7 @@
           },
           "pe2ometif": {
             "branch": "develop",
-            "git_sha": "fbeea47154cc7c0a7d8a7061cb865778a7ae3c08",
+            "git_sha": "8485a31aaba29d8bf7ad8b5c70b1e8f3cc0181da",
             "installed_by": ["modules"]
           }
         }
