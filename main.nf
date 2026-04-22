@@ -43,9 +43,8 @@ workflow PREPROCESS_TIFF_TILES_ASHLAR {
             def sorted = [round_indices, images_list, companions]
                 .transpose()
                 .sort { a, b -> a[0] <=> b[0] }
-            [[id: meta.id, round_index: meta.round_index], sorted.collect { row -> row[1] }, sorted.collect { row -> row[2] }.flatten()]
+            [[id: meta.id], sorted.collect { row -> row[2] }, sorted.collect { row -> row[1] }.flatten()]
         }
-    multi_cycle_images.view()
     IMAGING_ASHLARCOMPANION(
         multi_cycle_images,
         params.dfp_folder ?: [],
