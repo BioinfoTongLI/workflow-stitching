@@ -371,10 +371,21 @@ def parse_index(index_path: Path) -> tuple[PlateInfo, list[ImageEntry]]:
                     f"token in filename '{Path(url).name}'; using z_offset=0.0"
                 )
 
+        # Try to extract row/col/field from the filename as a fallback.
+        # PE filenames encode all three: r02c03f01p01-ch1sk1fk1fl1.tiff
+        m_rcf = re.search(r"[Rr](\d+)[Cc](\d+)[Ff](\d+)", Path(url).name)
+
+        row_val   = _int(wi, "Row", default=0) or (int(m_rcf.group(1)) if m_rcf else 1)
+        col_val   = _int(wi, "Col", "Column", default=0) or (int(m_rcf.group(2)) if m_rcf else 1)
+        field_val = (
+            _int(wi, "FieldID") or _int(wi, "FieldNr") or _int(wi, "Field", default=0)
+            or (int(m_rcf.group(3)) if m_rcf else 1)
+        )
+
         entries.append(ImageEntry(
-            row=_int(wi, "Row", default=1),
-            col=_int(wi, "Col", "Column", default=1),
-            field=_int(wi, "FieldID") or _int(wi, "FieldNr") or _int(wi, "Field", default=1),
+            row=row_val,
+            col=col_val,
+            field=field_val,
             plane=_int(wi, "PlaneID") or _int(wi, "PlaneNr") or _int(wi, "Plane", default=1),
             timepoint=(
                 _int(wi, "TimepointID")
@@ -834,6 +845,59 @@ def parse_well_field(filename: str) -> tuple[int, int, int]:
     return 0, 0, 0
 
 
+def _row_letter_to_int(letter: str) -> int:
+    """'A' → 1, 'B' → 2, …, 'Z' → 26, 'AA' → 27, …"""
+    result = 0
+    for c in letter.strip().upper():
+        if not c.isalpha():
+            raise ValueError(f"Invalid row letter: {letter!r}")
+        result = result * 26 + (ord(c) - ord("A") + 1)
+    return result
+
+
+def parse_row_range(spec: str) -> list[int]:
+    """
+    Parse a row-letter range spec into a list of 1-based row indices.
+
+    Examples
+    --------
+    'B'    → [2]
+    'B-D'  → [2, 3, 4]
+    'AA'   → [27]
+    """
+    spec = spec.strip().upper()
+    if "-" in spec:
+        start_s, end_s = [s.strip() for s in spec.split("-", 1)]
+        start, end = _row_letter_to_int(start_s), _row_letter_to_int(end_s)
+        if start > end:
+            raise ValueError(
+                f"Row range start '{start_s}' is after end '{end_s}'."
+            )
+        return list(range(start, end + 1))
+    return [_row_letter_to_int(spec)]
+
+
+def parse_col_range(spec: str) -> list[int]:
+    """
+    Parse a column-number range spec into a list of 1-based column indices.
+
+    Examples
+    --------
+    '4'    → [4]
+    '4-6'  → [4, 5, 6]
+    """
+    spec = spec.strip()
+    if "-" in spec:
+        start_s, end_s = [s.strip() for s in spec.split("-", 1)]
+        start, end = int(start_s), int(end_s)
+        if start > end:
+            raise ValueError(
+                f"Column range start {start} is after end {end}."
+            )
+        return list(range(start, end + 1))
+    return [int(spec)]
+
+
 def group_by_well_field(
     entries: list[ImageEntry],
 ) -> dict[tuple[int, int, int], list[ImageEntry]]:
@@ -1172,34 +1236,38 @@ def build_companion_xml(
     return ET.tostring(ome, encoding="unicode")
 
 
-def make_companion(
-    output_dir: Path,
-    companion_path: Path,
-    plate: PlateInfo,
-) -> None:
-    """
-    Scan *output_dir* for OME-TIFFs and write a companion file to
-    *companion_path*.  Plate metadata comes from the already-parsed *plate*
-    object so the index XML is not re-read.
-    """
+def _collect_tiff_infos(output_dir: Path) -> list[TiffInfo]:
+    """Read OME-XML headers from every OME-TIFF in *output_dir*."""
     tif_files = sorted(
         p for p in output_dir.iterdir()
         if p.name.lower().endswith(".ome.tif")
         or p.name.lower().endswith(".ome.tiff")
     )
-    if not tif_files:
-        print("  WARNING: no OME-TIFFs found in output dir — companion not written.")
-        return
-
-    tiff_infos: list[TiffInfo] = []
+    infos: list[TiffInfo] = []
     for idx, path in enumerate(tif_files):
         try:
-            tiff_infos.append(_read_tiff_info(path, idx))
+            infos.append(_read_tiff_info(path, idx))
         except Exception as exc:
             print(f"  WARNING: skipping {path.name} from companion: {exc}")
+    return infos
+
+
+def make_companion(
+    output_dir: Path,
+    companion_path: Path,
+    plate: PlateInfo,
+    tiff_infos: Optional[list[TiffInfo]] = None,
+) -> None:
+    """
+    Write a master companion file that references every OME-TIFF in
+    *output_dir*.  Pass pre-read *tiff_infos* to avoid a second disk scan
+    when calling alongside make_per_well_companions().
+    """
+    if tiff_infos is None:
+        tiff_infos = _collect_tiff_infos(output_dir)
 
     if not tiff_infos:
-        print("  WARNING: could not read metadata from any output file.")
+        print("  WARNING: no OME-TIFFs found in output dir — companion not written.")
         return
 
     xml_str = build_companion_xml(tiff_infos, plate)
@@ -1216,6 +1284,62 @@ def make_companion(
         f"\nCompanion   : {companion_path.name}  ({mode})\n"
         + (f"  {n_wells} wells, {hcs_count} well-fields\n" if hcs_count else "")
         + f"  {len(tiff_infos)} Image series"
+    )
+
+
+def make_per_well_companions(
+    output_dir: Path,
+    plate: PlateInfo,
+    prefix: str = "",
+    tiff_infos: Optional[list[TiffInfo]] = None,
+) -> None:
+    """
+    Write one OME companion file per well to *output_dir*.
+
+    Each file is named  {prefix}_{well_label}.companion.ome  (e.g.
+    test_1_C07.companion.ome) and contains:
+      - <Image> / <Pixels> / <TiffData> / <Plane> elements for every
+        field-of-view belonging to that well (all metadata preserved).
+      - A <Plate> element with the full plate layout (Rows × Columns) so
+        viewers retain the correct plate context, with only the single
+        <Well> / <WellSample> entry for this well.
+
+    The full plate dimension metadata is preserved from the *plate* object.
+    Pass pre-read *tiff_infos* to share the disk scan with make_companion().
+    """
+    if tiff_infos is None:
+        tiff_infos = _collect_tiff_infos(output_dir)
+
+    if not tiff_infos:
+        return
+
+    # Group by (well_row, well_col); skip images with no well position
+    by_well: dict[tuple[int, int], list[TiffInfo]] = defaultdict(list)
+    for ti in tiff_infos:
+        if ti.well_row > 0:
+            by_well[(ti.well_row, ti.well_col)].append(ti)
+
+    if not by_well:
+        print("  WARNING: no well positions detected — per-well companions not written.")
+        return
+
+    stem = f"{prefix}_" if prefix else ""
+    written: list[str] = []
+    for (row, col), well_tiffs in sorted(by_well.items()):
+        label = well_label(row, col)
+        companion_path = output_dir / f"{stem}{label}.companion.ome"
+        # build_companion_xml keeps full plate dimensions but only adds a
+        # <Well> entry for the TiffInfos it receives.
+        xml_str = build_companion_xml(well_tiffs, plate)
+        companion_path.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str,
+            encoding="utf-8",
+        )
+        written.append(label)
+
+    print(
+        f"\nPer-well companions: {len(written)} file(s) → "
+        + ", ".join(written)
     )
 
 
@@ -1485,6 +1609,8 @@ def convert(
     apply_correction: bool,
     write_companion: bool,
     prefix: str = "",
+    row_range: Optional[list[int]] = None,
+    col_range: Optional[list[int]] = None,
 ) -> None:
     print(f"Parsing {index_path.name} …")
     plate, entries = parse_index(index_path)
@@ -1574,6 +1700,24 @@ def convert(
         if not groups:
             sys.exit("No matching wells found after applying --wells filter.")
 
+    if row_range is not None or col_range is not None:
+        allowed_rows = set(row_range) if row_range is not None else None
+        allowed_cols = set(col_range) if col_range is not None else None
+        groups = {
+            k: v for k, v in groups.items()
+            if (allowed_rows is None or k[0] in allowed_rows)
+            and (allowed_cols is None or k[1] in allowed_cols)
+        }
+        range_desc = "".join([
+            f" rows {chr(ord('A') + min(allowed_rows) - 1)}"
+            f"-{chr(ord('A') + max(allowed_rows) - 1)}" if allowed_rows else "",
+            f" cols {min(allowed_cols)}-{max(allowed_cols)}" if allowed_cols else "",
+        ]).strip()
+        if not groups:
+            sys.exit(
+                f"No wells found after applying range filter ({range_desc})."
+            )
+
     output_dir.mkdir(parents=True, exist_ok=True)
     if correction:
         save_correction_maps(correction, output_dir, prefix=prefix)
@@ -1625,11 +1769,20 @@ def convert(
         print()  # newline after \r progress
 
     if write_companion:
+        # Read the output TIFFs once and share across both companion writers.
+        tiff_infos = _collect_tiff_infos(output_dir)
         companion_name = f"{prefix}.companion.ome" if prefix else "plate.companion.ome"
         make_companion(
             output_dir=output_dir,
             companion_path=output_dir / companion_name,
             plate=plate,
+            tiff_infos=tiff_infos,
+        )
+        make_per_well_companions(
+            output_dir=output_dir,
+            plate=plate,
+            prefix=prefix,
+            tiff_infos=tiff_infos,
         )
 
     print("Done.")
@@ -1698,6 +1851,26 @@ def parse_args(argv=None):
         ),
     )
     ap.add_argument(
+        "--row-range",
+        default=None,
+        metavar="START[-END]",
+        help=(
+            "Row letter range to process, inclusive.  "
+            "Single row: 'B'.  Range: 'B-D' processes rows B, C, D.  "
+            "Can be combined with --col-range.  Default: all rows."
+        ),
+    )
+    ap.add_argument(
+        "--col-range",
+        default=None,
+        metavar="START[-END]",
+        help=(
+            "Column number range to process, inclusive.  "
+            "Single column: '4'.  Range: '4-6' processes columns 4, 5, 6.  "
+            "Can be combined with --row-range.  Default: all columns."
+        ),
+    )
+    ap.add_argument(
         "--no-companion",
         action="store_true",
         help=(
@@ -1740,6 +1913,20 @@ def main(argv=None):
             except ValueError as exc:
                 sys.exit(f"Error: {exc}")
 
+    row_range: Optional[list[int]] = None
+    if args.row_range:
+        try:
+            row_range = parse_row_range(args.row_range)
+        except ValueError as exc:
+            sys.exit(f"Error in --row-range: {exc}")
+
+    col_range: Optional[list[int]] = None
+    if args.col_range:
+        try:
+            col_range = parse_col_range(args.col_range)
+        except ValueError as exc:
+            sys.exit(f"Error in --col-range: {exc}")
+
     convert(
         index_path=index_path,
         output_dir=output_dir,
@@ -1750,6 +1937,8 @@ def main(argv=None):
         apply_correction=not args.no_correction,
         write_companion=not args.no_companion,
         prefix=args.prefix,
+        row_range=row_range,
+        col_range=col_range,
     )
 
 
