@@ -12,7 +12,7 @@
           },
           "imaging/ashlarcompanion": {
             "branch": "develop",
-            "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
+            "git_sha": "45c25ab87fd5a3d2243b20a1e06fc34835c74a59",
             "installed_by": ["modules", "preprocess_tiff_tiles_ashlar"]
           },
           "imaging/generatecompanion": {
