@@ -24,7 +24,7 @@ workflow PREPROCESS_OME_ZARR_TILES_ASHLAR {
             [
                 [id: row.id, round_index: row.round_index],
                 file(row.master_file, checkIfExists: true),
-                file(file(row.master_file, checkIfExists: true).parent + "/*tiff", checkIfExists: true),
+                file(file(row.master_file, checkIfExists: true).parent, checkIfExists: true),
             ]
         }
     PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH(

@@ -7,7 +7,7 @@
         "sanger-cellgeni": {
           "bioformats2rawcompanion": {
             "branch": "develop",
-            "git_sha": "a2498fcac65e6cf2a6ac87a3d7ad48825b45896b",
+            "git_sha": "308317e27ceaaaa7eb2cd30f837580b1ff618fc8",
             "installed_by": ["modules"]
           },
           "imaging/ashlarcompanion": {
