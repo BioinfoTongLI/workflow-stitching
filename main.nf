@@ -1,10 +1,5 @@
 include { ASHLAR_RUN ; PREPROCESS_OME_ZARR_TILES_ASHLAR_STITCH } from './workflows/main'
 
-params.manifest = "/home/ubuntu/Documents/workflow-stitching/manifest.csv"
-params.dfp_folder = []
-params.ffp_folder = []
-params.psf_folder = []
-
 workflow {
     images = channel.fromPath(params.manifest)
         .splitCsv(header: true, sep: ',')
