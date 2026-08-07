@@ -12,7 +12,7 @@ export WORKDIR=./work
 
 nextflow run bioinfotongli/workflow-stitching -r 913772155b \
     -profile lsf,singularity \
-    -entry PREPROCESS_OME_ZARR_TILES_ASHLAR \
+    --entry preprocess_ome_zarr_ashlar \
     --manifest ./manifest.csv \
     --is_plate true \
     -c run.config \
