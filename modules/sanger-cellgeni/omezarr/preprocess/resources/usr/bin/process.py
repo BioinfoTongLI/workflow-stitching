@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+
+import logging
+import time  # Import the time module
+
+# from cucim.skimage.restoration import richardson_lucy
+# from skimage.restoration import richardson_lucy
+from pathlib import Path
 
 import fire
 
 # from aicsimageio.writers.ome_tiff_writer import OmeTiffWriter
 # from bioio_ome_tiff.writers import OmeTiffWriter
 import numpy as np
-import tifffile as tf
-import time  # Import the time module
-from clij2fft.richardson_lucy import richardson_lucy_nc, richardson_lucy
-
-# from cucim.skimage.restoration import richardson_lucy
-# from skimage.restoration import richardson_lucy
-from pathlib import Path
 import pyopencl as cl
-import logging
-from ngio import open_ome_zarr_plate
-
-from bioio import PhysicalPixelSizes
+import tifffile as tf
+from clij2fft.richardson_lucy import richardson_lucy, richardson_lucy_nc
+from ngio import open_ome_zarr_container, open_ome_zarr_plate
 
 # Set up logging
 logging.basicConfig(
@@ -95,7 +93,7 @@ def load_and_process_psf(z_stack, psf_file, original_z_step, psf_z_step=0.1):
 
 def main(
     root_folder,
-    out_img_name,
+    out_zarr,
     iterations=100,
     psf_folder="psfs",
     z_project=True,
@@ -124,9 +122,16 @@ def main(
     start_time = time.time()
     cursor = start_time
 
-    plate = open_ome_zarr_plate(root_folder)
-    row, column, fov = hcs_path.split("/")
-    img = plate.get_image(row=row, column=column, image_path=fov).get_image()
+    if hcs_path:
+        row, column, fov = hcs_path.split("/")
+        img = (
+            open_ome_zarr_plate(root_folder)
+            .get_image(row=row, column=column, image_path=fov)
+            .get_image()
+        )
+    else:
+        row = column = fov = None
+        img = open_ome_zarr_container(root_folder).get_image()
     pixelsize = img.pixel_size
     print(f"Time taken to load the image: {time.time() - cursor} seconds")
     cursor = time.time()
@@ -166,11 +171,15 @@ def main(
     cursor = time.time()
     new_dim_order = "TCYX" if z_project else "TCZYX"
     output_data = prepare_output_array(processed_hyper_stack)
-    tf.imwrite(
-        f"{out_img_name}",
-        output_data,
-        metadata={"axes": new_dim_order},
-    )
+
+    if hcs_path:
+        out_container = open_ome_zarr_plate(out_zarr).get_image(
+            row=row, column=column, image_path=fov
+        )
+    else:
+        out_container = open_ome_zarr_container(out_zarr)
+    out_container.get_image().set_array(output_data, axes_order=new_dim_order)
+    out_container.consolidate()
     print(f"Elapsed time for saving the image: {time.time() - cursor} seconds")
 
 
