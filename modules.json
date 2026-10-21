@@ -10,6 +10,11 @@
             "git_sha": "7d85aad8ed4d9463e079644c9accbdc429bf86d6",
             "installed_by": ["modules"]
           },
+          "icechunk/stitchedplate": {
+            "branch": "develop",
+            "git_sha": "dd5b65fc44a33b91105d0097062c49f924fa38bc",
+            "installed_by": ["preprocess_phenix_icechunk"]
+          },
           "imaging/ashlarcompanion": {
             "branch": "main",
             "git_sha": "16d631eb9cd8180d6381c609374fbf3f52f4dfda",
@@ -35,6 +40,11 @@
             "git_sha": "7d85aad8ed4d9463e079644c9accbdc429bf86d6",
             "installed_by": ["preprocess_tiles"]
           },
+          "multiviewstitcher": {
+            "branch": "develop",
+            "git_sha": "fd0fb6305b80f309bc3db0cea8840282714d8fce",
+            "installed_by": ["preprocess_phenix_icechunk"]
+          },
           "omezarr/preprocess": {
             "branch": "develop",
             "git_sha": "290233d1f389660afa6e751afb026040484b35af",
@@ -42,8 +52,8 @@
           },
           "phenixicechunk": {
             "branch": "develop",
-            "git_sha": "ea89c135c170985753e1719e4e6392278d8550a7",
-            "installed_by": ["modules"]
+            "git_sha": "1b1e6ffbe32555b6b201a8a30a0c4d2095a7f189",
+            "installed_by": ["modules", "preprocess_phenix_icechunk"]
           }
         }
       },
@@ -52,6 +62,11 @@
           "preprocess_ome_zarr_tiles": {
             "branch": "develop",
             "git_sha": "c583bb87c3e105e6a85d91bf2ed0016823a79c84",
+            "installed_by": ["subworkflows"]
+          },
+          "preprocess_phenix_icechunk": {
+            "branch": "develop",
+            "git_sha": "c6c24258b1768fb876b41aae9865ed1170905851",
             "installed_by": ["subworkflows"]
           },
           "preprocess_tiles": {

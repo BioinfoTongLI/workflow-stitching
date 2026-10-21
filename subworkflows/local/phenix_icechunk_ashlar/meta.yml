@@ -1,0 +1,50 @@
+name: "phenix_icechunk_ashlar"
+description: |
+  Convert Opera Phenix / Harmony measurements into icechunk repositories with flatfield corrected
+  max z projections exported as per-well OME-TIFFs, then stitch each well with ASHLAR across all
+  measurements ordered by round_index, registering every later cycle to the first one.
+
+  Expected module configuration:
+  PHENIXICECHUNK ext.args = "--flatfield --zproject max --ome-tiff ."
+keywords:
+  - microscopy
+  - opera phenix
+  - icechunk
+  - ome-tiff
+  - stitching
+  - registration
+components:
+  - sanger-cellgeni/phenixicechunk
+  - ashlar
+input:
+  - measurements_ch:
+      type: file
+      description: |
+        Channel with one entry per measurement (imaging round).
+        Structure: [ val(meta), path(image_dir), val(index_name) ], meta: [ id, round_index ]
+  - dfp_folder:
+      type: file
+      description: Optional ASHLAR dark field profile(s)
+  - ffp_folder:
+      type: file
+      description: Optional ASHLAR flat field profile(s)
+output:
+  - repo:
+      type: directory
+      description: |
+        Icechunk repo per measurement.
+        Structure: [ val(meta), path(repo.icechunk) ], meta: [ id, sample, round_index ]
+  - cycles:
+      type: file
+      description: |
+        Per-well max projection OME-TIFFs of all measurements, ordered by round_index.
+        Structure: [ val(meta), [ path(ome.tiff) ] ], meta: [ id, sample, well ]
+  - stitched:
+      type: file
+      description: |
+        ASHLAR stitched image per well with all rounds registered to the first one.
+        Structure: [ val(meta), path(ome.tif) ]
+authors:
+  - "@BioinfoTongLI"
+maintainers:
+  - "@BioinfoTongLI"

@@ -1,0 +1,46 @@
+nextflow_workflow {
+
+    name "Test Subworkflow PHENIX_ICECHUNK_ASHLAR"
+    script "../main.nf"
+    workflow "PHENIX_ICECHUNK_ASHLAR"
+    config "./nextflow.config"
+
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "subworkflows/phenix_icechunk_ashlar"
+    tag "phenixicechunk"
+    tag "ashlar"
+
+    // Stub test only, see modules/sanger-cellgeni/phenixicechunk/tests/main.nf.test.
+    // Rounds are given out of order to check the cycles reach ashlar sorted by round_index.
+
+    test("two rounds - max projection - ashlar - stub") {
+
+        options "-stub"
+
+        when {
+            workflow {
+                """
+                input[0] = channel.of(
+                    [ [ id:'test', round_index:'2' ], file('.'), 'Index.xml' ],
+                    [ [ id:'test', round_index:'1' ], file('.'), 'Index.xml' ],
+                )
+                input[1] = []
+                input[2] = []
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success },
+                { assert workflow.out.repo.size() == 2 },
+                { assert workflow.out.cycles.size() == 1 },
+                { assert workflow.out.cycles[0][0] == [ id:'test_A1', sample:'test', well:'A1' ] },
+                { assert workflow.out.cycles[0][1].collect { file(it).name } == [ 'test_r1_A1.ome.tiff', 'test_r2_A1.ome.tiff' ] },
+                { assert workflow.out.stitched.size() == 1 },
+                { assert workflow.out.stitched[0][0] == [ id:'test_A1', sample:'test', well:'A1' ] },
+            )
+        }
+    }
+}
