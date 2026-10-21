@@ -10,11 +10,13 @@ export NXF_ANSI_LOG=false
 export NXF_OPTS="-Xms4G -Xmx4G -Dnxf.pool.maxThreads=4000"
 export WORKDIR=./work
 
-nextflow run bioinfotongli/workflow-stitching -r 913772155b \
+# --entry: 'ashlar_run', 'phenix_icechunk_stitch' or 'phenix_icechunk_ashlar'
+# the manifest master_file of the phenix entries points at each measurement's Harmony Index.xml
+nextflow run bioinfotongli/workflow-stitching -r develop \
     -profile lsf,singularity \
-    --entry preprocess_ome_zarr_ashlar \
+    --entry phenix_icechunk_ashlar \
     --manifest ./manifest.csv \
-    --is_plate true \
+    --out_dir ./output \
     -c run.config \
     -w $WORKDIR \
     -resume
