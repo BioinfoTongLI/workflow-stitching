@@ -26,7 +26,7 @@
         "sanger-cellgeni": {
           "preprocess_phenix_icechunk": {
             "branch": "develop",
-            "git_sha": "c6c24258b1768fb876b41aae9865ed1170905851",
+            "git_sha": "9bdf3874cc950808fe15055b108f52fa8bccf00a",
             "installed_by": ["subworkflows"]
           }
         }

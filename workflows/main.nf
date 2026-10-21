@@ -10,5 +10,5 @@ workflow ASHLAR_RUN {
     ASHLAR(images, dfp_folder, ffp_folder)
 
     emit:
-    ASHLAR.out.tif
+    stitched = ASHLAR.out.tif // channel: [ val(meta), path(ome.tif) ]
 }
