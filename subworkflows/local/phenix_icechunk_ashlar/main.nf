@@ -38,6 +38,7 @@ workflow PHENIX_ICECHUNK_ASHLAR {
 
     emit:
     repo     = PHENIXICECHUNK.out.repo // channel: [ val(meta), path(repo.icechunk) ], one per measurement
+    summary  = PHENIXICECHUNK.out.summary // channel: [ val(meta), path(summary.json) ], one per measurement
     cycles   = cycles // channel: [ val(meta), [ path(ome.tiff) ] ], one per well, ordered by round_index
     stitched = ASHLAR.out.tif // channel: [ val(meta), path(ome.tif) ], one per well, all rounds registered
 }
