@@ -7,7 +7,7 @@
         "sanger-cellgeni": {
           "bioformats2rawcompanion": {
             "branch": "develop",
-            "git_sha": "7d85aad8ed4d9463e079644c9accbdc429bf86d6",
+            "git_sha": "013a2dc9aef16708a232faa343483490b9bc704d",
             "installed_by": ["modules"]
           },
           "icechunk/stitchedplate": {
@@ -22,7 +22,7 @@
           },
           "imaging/generatecompanion": {
             "branch": "develop",
-            "git_sha": "7d85aad8ed4d9463e079644c9accbdc429bf86d6",
+            "git_sha": "013a2dc9aef16708a232faa343483490b9bc704d",
             "installed_by": ["preprocess_ome_zarr_tiles", "preprocess_tiles"]
           },
           "imaging/generatecompanionfromfiles": {
@@ -37,7 +37,7 @@
           },
           "imaging/preprocess": {
             "branch": "develop",
-            "git_sha": "7d85aad8ed4d9463e079644c9accbdc429bf86d6",
+            "git_sha": "013a2dc9aef16708a232faa343483490b9bc704d",
             "installed_by": ["preprocess_tiles"]
           },
           "multiviewstitcher": {
