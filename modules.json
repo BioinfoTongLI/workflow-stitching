@@ -39,6 +39,11 @@
             "branch": "develop",
             "git_sha": "290233d1f389660afa6e751afb026040484b35af",
             "installed_by": ["preprocess_ome_zarr_tiles"]
+          },
+          "phenixicechunk": {
+            "branch": "develop",
+            "git_sha": "ea89c135c170985753e1719e4e6392278d8550a7",
+            "installed_by": ["modules"]
           }
         }
       },
