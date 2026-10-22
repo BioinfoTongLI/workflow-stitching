@@ -17,7 +17,7 @@
           },
           "phenixicechunk": {
             "branch": "develop",
-            "git_sha": "1b1e6ffbe32555b6b201a8a30a0c4d2095a7f189",
+            "git_sha": "1a742a1045265f5ca9d4962cedaa7cc53b9fcc1a",
             "installed_by": ["modules", "preprocess_phenix_icechunk"]
           }
         }
