@@ -65,8 +65,8 @@ output {
     stitched {
         path 'stitched'
     }
-    // per-well stitching QC plots
+    // per-well stitching QC plots, one folder per round as the plot names do not carry the round
     qc {
-        path 'qc'
+        path { meta, _png -> "qc/round_${meta.round_index}" }
     }
 }
